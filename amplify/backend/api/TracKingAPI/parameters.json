@@ -1,0 +1,11 @@
+{
+  "AppSyncApiName": "TracKingAPI",
+  "DynamoDBBillingMode": "PAY_PER_REQUEST",
+  "DynamoDBEnableServerSideEncryption": false,
+  "AuthCognitoUserPoolId": {
+    "Fn::GetAtt": [
+      "authtracking4cb9162f",
+      "Outputs.UserPoolId"
+    ]
+  }
+}
