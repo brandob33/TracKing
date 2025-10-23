@@ -1,98 +1,590 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
-
-export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
-
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
-  );
+import React from "react";
+import { SafeAreaView, View, ScrollView, Image, Text, } from "react-native";
+export default () => {
+	return (
+		<SafeAreaView 
+			style={{
+				flex: 1,
+				backgroundColor: "#FFFFFF",
+			}}>
+			<ScrollView  
+				style={{
+					flex: 1,
+					backgroundColor: "#FFFFFF",
+				}}>
+				<View 
+					style={{
+						flexDirection: "row",
+						justifyContent: "space-between",
+						alignItems: "center",
+						marginTop: 58,
+						marginBottom: 142,
+						marginHorizontal: 16,
+					}}>
+					<Image
+						source = {{uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/Y6HTvlzwKN/faps2dfm_expires_30_days.png"}} 
+						resizeMode = {"stretch"}
+						style={{
+							width: 24,
+							height: 24,
+						}}
+					/>
+					<Text 
+						style={{
+							color: "#000000",
+							fontSize: 20,
+							fontWeight: "bold",
+						}}>
+						{"TracKing"}
+					</Text>
+					<Image
+						source = {{uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/Y6HTvlzwKN/xtr6zjl2_expires_30_days.png"}} 
+						resizeMode = {"stretch"}
+						style={{
+							width: 24,
+							height: 24,
+						}}
+					/>
+				</View>
+				<View 
+					style={{
+						marginBottom: 102,
+						marginHorizontal: 14,
+					}}>
+					<View 
+						style={{
+							marginBottom: 102,
+							marginHorizontal: 21,
+						}}>
+						<View >
+							<View 
+								style={{
+									backgroundColor: "#FFFFFF",
+									borderRadius: 8,
+									paddingTop: 24,
+									paddingBottom: 22,
+									paddingHorizontal: 24,
+									shadowColor: "#00000017",
+									shadowOpacity: 0.1,
+									shadowOffset: {
+									    width: 2,
+									    height: 16
+									},
+									shadowRadius: 19,
+									elevation: 19,
+								}}>
+								<View 
+									style={{
+										flexDirection: "row",
+										justifyContent: "space-between",
+										backgroundColor: "#FFFFFF",
+										marginBottom: 22,
+									}}>
+									<Image
+										source = {{uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/Y6HTvlzwKN/ea0dpag1_expires_30_days.png"}} 
+										resizeMode = {"stretch"}
+										style={{
+											width: 16,
+											height: 16,
+										}}
+									/>
+									<Text 
+										style={{
+											color: "#4A5660",
+											fontSize: 14,
+											fontWeight: "bold",
+										}}>
+										{"September 2021"}
+									</Text>
+									<Image
+										source = {{uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/Y6HTvlzwKN/en9oh335_expires_30_days.png"}} 
+										resizeMode = {"stretch"}
+										style={{
+											width: 16,
+											height: 16,
+										}}
+									/>
+								</View>
+								<View 
+									style={{
+										paddingTop: 8,
+										paddingBottom: 11,
+										paddingHorizontal: 6,
+									}}>
+									<View 
+										style={{
+											flexDirection: "row",
+											marginBottom: 26,
+										}}>
+										<View 
+											style={{
+												flex: 1,
+												alignItems: "center",
+												paddingTop: 0,
+												paddingBottom: 0,
+												marginRight: 32,
+											}}>
+											<Text 
+												style={{
+													color: "#4A5660",
+													fontSize: 16,
+													fontWeight: "bold",
+												}}>
+												{"1"}
+											</Text>
+										</View>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												textAlign: "center",
+												marginRight: 29,
+												flex: 1,
+											}}>
+											{"2"}
+										</Text>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												textAlign: "center",
+												marginRight: 29,
+												flex: 1,
+											}}>
+											{"3"}
+										</Text>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												textAlign: "center",
+												marginRight: 29,
+												flex: 1,
+											}}>
+											{"4"}
+										</Text>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												textAlign: "center",
+												marginRight: 30,
+												flex: 1,
+											}}>
+											{"5"}
+										</Text>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												textAlign: "center",
+												marginRight: 29,
+												flex: 1,
+											}}>
+											{"6"}
+										</Text>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												textAlign: "center",
+												flex: 1,
+											}}>
+											{"7"}
+										</Text>
+									</View>
+									<View 
+										style={{
+											flexDirection: "row",
+											marginBottom: 18,
+										}}>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												textAlign: "center",
+												marginRight: 29,
+												flex: 1,
+											}}>
+											{"8"}
+										</Text>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												textAlign: "center",
+												marginRight: 25,
+												flex: 1,
+											}}>
+											{"9"}
+										</Text>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												textAlign: "center",
+												marginRight: 20,
+												flex: 1,
+											}}>
+											{"10"}
+										</Text>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												textAlign: "center",
+												marginRight: 22,
+												flex: 1,
+											}}>
+											{"11"}
+										</Text>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												textAlign: "center",
+												marginRight: 20,
+												flex: 1,
+											}}>
+											{"12"}
+										</Text>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												textAlign: "center",
+												marginRight: 20,
+												flex: 1,
+											}}>
+											{"13"}
+										</Text>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												textAlign: "center",
+												flex: 1,
+											}}>
+											{"14"}
+										</Text>
+									</View>
+									<View 
+										style={{
+											alignSelf: "flex-start",
+											flexDirection: "row",
+											alignItems: "center",
+											marginBottom: 16,
+										}}>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												marginRight: 20,
+											}}>
+											{"15"}
+										</Text>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												marginRight: 20,
+											}}>
+											{"16"}
+										</Text>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												marginRight: 20,
+											}}>
+											{"17"}
+										</Text>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												marginRight: 14,
+											}}>
+											{"18"}
+										</Text>
+										<View 
+											style={{
+												backgroundColor: "#F04D23",
+												borderRadius: 29,
+												paddingTop: 8,
+												paddingBottom: 10,
+												paddingHorizontal: 6,
+												marginRight: 14,
+											}}>
+											<Text 
+												style={{
+													color: "#FFFFFF",
+													fontSize: 16,
+													fontWeight: "bold",
+												}}>
+												{"19"}
+											</Text>
+										</View>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												marginRight: 20,
+											}}>
+											{"20"}
+										</Text>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+											}}>
+											{"21"}
+										</Text>
+									</View>
+									<View 
+										style={{
+											flexDirection: "row",
+											marginBottom: 28,
+										}}>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												textAlign: "center",
+												marginRight: 20,
+												flex: 1,
+											}}>
+											{"22"}
+										</Text>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												textAlign: "center",
+												marginRight: 20,
+												flex: 1,
+											}}>
+											{"23"}
+										</Text>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												textAlign: "center",
+												marginRight: 20,
+												flex: 1,
+											}}>
+											{"24"}
+										</Text>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												textAlign: "center",
+												marginRight: 20,
+												flex: 1,
+											}}>
+											{"25"}
+										</Text>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												textAlign: "center",
+												marginRight: 20,
+												flex: 1,
+											}}>
+											{"26"}
+										</Text>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												textAlign: "center",
+												marginRight: 20,
+												flex: 1,
+											}}>
+											{"27"}
+										</Text>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												textAlign: "center",
+												flex: 1,
+											}}>
+											{"28"}
+										</Text>
+									</View>
+									<View 
+										style={{
+											alignSelf: "flex-start",
+											flexDirection: "row",
+										}}>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												marginRight: 19,
+											}}>
+											{"29"}
+										</Text>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+												marginRight: 19,
+											}}>
+											{"30"}
+										</Text>
+										<Text 
+											style={{
+												color: "#4A5660",
+												fontSize: 16,
+												fontWeight: "bold",
+											}}>
+											{"31"}
+										</Text>
+									</View>
+								</View>
+							</View>
+							<View 
+								style={{
+									position: "absolute",
+									bottom: -107,
+									right: -21,
+									left: -21,
+									backgroundColor: "#FFFFFF",
+									borderColor: "#DFDFDF",
+									borderRadius: 8,
+									borderWidth: 1,
+									paddingVertical: 16,
+									paddingLeft: 16,
+								}}>
+								<Text 
+									style={{
+										color: "#000000",
+										fontSize: 14,
+										fontWeight: "bold",
+										marginBottom: 8,
+									}}>
+									{"Supplementals"}
+								</Text>
+								<Text 
+									style={{
+										color: "#000000",
+										fontSize: 12,
+										width: 98,
+									}}>
+									{"Warmup C\nCooldown B\nHurdle Mobility  E"}
+								</Text>
+							</View>
+						</View>
+						<View 
+							style={{
+								position: "absolute",
+								top: -128,
+								right: -19,
+								left: -19,
+								backgroundColor: "#FFFFFF",
+								borderColor: "#DFDFDF",
+								borderRadius: 8,
+								borderWidth: 1,
+								paddingVertical: 16,
+								paddingLeft: 16,
+							}}>
+							<Text 
+								style={{
+									color: "#000000",
+									fontSize: 14,
+									fontWeight: "bold",
+									marginBottom: 8,
+								}}>
+								{"Today’s Workout"}
+							</Text>
+							<Text 
+								style={{
+									color: "#000000",
+									fontSize: 28,
+									fontWeight: "bold",
+									marginBottom: 8,
+								}}>
+								{"3x2x250’s @ 85%"}
+							</Text>
+							<Text 
+								style={{
+									color: "#828282",
+									fontSize: 12,
+									marginBottom: 8,
+								}}>
+								{"Notes: 13.5s / 100m."}
+							</Text>
+							<Text 
+								style={{
+									color: "#828282",
+									fontSize: 12,
+								}}>
+								{"Rest: 6 minutes / 4  minutes."}
+							</Text>
+						</View>
+					</View>
+					<View 
+						style={{
+							backgroundColor: "#FFFFFF",
+							borderColor: "#DFDFDF",
+							borderRadius: 8,
+							borderWidth: 1,
+							paddingVertical: 16,
+							paddingLeft: 16,
+						}}>
+						<Text 
+							style={{
+								color: "#000000",
+								fontSize: 14,
+								fontWeight: "bold",
+								marginBottom: 8,
+							}}>
+							{"Recovery"}
+						</Text>
+						<Text 
+							style={{
+								color: "#000000",
+								fontSize: 12,
+								width: 96,
+							}}>
+							{"Roll out + Stretch\nContrast\nSleep"}
+						</Text>
+					</View>
+				</View>
+			</ScrollView>
+		</SafeAreaView>
+	)
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});
