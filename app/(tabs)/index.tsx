@@ -1,3 +1,4 @@
+import { useAuth } from '@/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link } from 'expo-router';
@@ -23,11 +24,14 @@ const SCHEDULE: Record<string, { title: string; focus: string; duration: string 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function MainMenu() {
+	const { user, completedWorkouts } = useAuth();
 	const [selectedDate, setSelectedDate] = useState<number>(new Date().getDay());
 
 	const today = new Date();
 	const currentDayName = DAYS[selectedDate];
+
 	const workout = SCHEDULE[currentDayName] || SCHEDULE['Mon']; // Fallback
+	const isCompleted = completedWorkouts.includes(currentDayName);
 
 	// Generate Week Dates (Static for demo relative to current selected index as pseudo-mock)
 	// Real app would use actual date logic. Here we just map 0-6 to the week days.
@@ -40,7 +44,7 @@ export default function MainMenu() {
 		<SafeAreaView style={styles.container}>
 			<ScrollView contentContainerStyle={styles.scrollContent}>
 				<View style={styles.header}>
-					<Text style={styles.greeting}>Track & Field</Text>
+					<Text style={styles.greeting}>Hi {user?.name.split(' ')[0] || 'Athlete'}</Text>
 					<Text style={styles.date}>UCI Anteaters</Text>
 				</View>
 
@@ -87,14 +91,43 @@ export default function MainMenu() {
 									<Ionicons name="time-outline" size={16} color="#ccc" />
 									<Text style={styles.metaText}>{workout.duration}</Text>
 								</View>
-								<View style={styles.startBtn}>
-									<Text style={styles.startBtnText}>START</Text>
-									<Ionicons name="arrow-forward" size={16} color={UCI_BLUE} />
-								</View>
+
+								{isCompleted ? (
+									<View style={[styles.startBtn, { backgroundColor: '#4BB543' }]}>
+										<Text style={styles.startBtnText}>COMPLETED</Text>
+										<Ionicons name="checkmark-circle" size={16} color="#fff" />
+									</View>
+								) : (
+									<View style={styles.startBtn}>
+										<Text style={styles.startBtnText}>START</Text>
+										<Ionicons name="arrow-forward" size={16} color={UCI_BLUE} />
+									</View>
+								)}
 							</View>
 						</LinearGradient>
 					</TouchableOpacity>
 				</Link>
+
+				<Text style={styles.sectionHeader}>SUPPLEMENTALS</Text>
+				<View style={styles.supplementsContainer}>
+					<View style={styles.supplementCard}>
+						<Ionicons name="snow" size={24} color={UCI_BLUE} />
+						<Text style={styles.supplementTitle}>Ice Bath</Text>
+						<Text style={styles.supplementTime}>10 min</Text>
+					</View>
+
+					<View style={styles.supplementCard}>
+						<Ionicons name="moon" size={24} color={UCI_BLUE} />
+						<Text style={styles.supplementTitle}>Quality Sleep</Text>
+						<Text style={styles.supplementTime}>8 hrs</Text>
+					</View>
+
+					<View style={styles.supplementCard}>
+						<Ionicons name="nutrition" size={24} color={UCI_BLUE} />
+						<Text style={styles.supplementTitle}>Protein</Text>
+						<Text style={styles.supplementTime}>30g</Text>
+					</View>
+				</View>
 			</ScrollView>
 		</SafeAreaView>
 	);
@@ -235,6 +268,31 @@ const styles = StyleSheet.create({
 	startBtnText: {
 		color: UCI_BLUE,
 		fontWeight: 'bold',
+		fontSize: 12,
+	},
+	supplementsContainer: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		gap: 12,
+		marginBottom: 30,
+	},
+	supplementCard: {
+		flex: 1,
+		backgroundColor: '#1c1c1e',
+		borderRadius: 16,
+		padding: 16,
+		alignItems: 'center',
+		justifyContent: 'center',
+		gap: 8,
+	},
+	supplementTitle: {
+		color: '#fff',
+		fontWeight: '600',
+		fontSize: 12,
+		textAlign: 'center',
+	},
+	supplementTime: {
+		color: '#8e8e93',
 		fontSize: 12,
 	},
 });

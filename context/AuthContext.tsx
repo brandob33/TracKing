@@ -16,6 +16,8 @@ interface AuthContextType {
     signIn: (email: string, pass: string) => Promise<boolean>;
     signUp: (email: string, pass: string) => Promise<boolean>;
     signOut: () => void;
+    completedWorkouts: string[];
+    completeWorkout: (id: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -24,6 +26,8 @@ const AuthContext = createContext<AuthContextType>({
     signIn: async () => false,
     signUp: async () => false,
     signOut: () => { },
+    completedWorkouts: [],
+    completeWorkout: () => { },
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -89,12 +93,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
     };
 
+    const [completedWorkouts, setCompletedWorkouts] = useState<string[]>([]);
+
+    const completeWorkout = (id: string) => {
+        if (!completedWorkouts.includes(id)) {
+            setCompletedWorkouts(prev => [...prev, id]);
+        }
+    };
+
     const signOut = () => {
         setUser(null);
+        setCompletedWorkouts([]);
     };
 
     return (
-        <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut }}>
+        <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut, completedWorkouts, completeWorkout }}>
             {children}
         </AuthContext.Provider>
     );

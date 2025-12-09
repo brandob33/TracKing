@@ -37,73 +37,59 @@ export default function WorkoutTimer() {
 
     return (
         <View style={styles.container}>
-            <View style={styles.displayContainer}>
-                <Text style={styles.timeText}>{formatTime(seconds)}</Text>
-            </View>
-            <View style={styles.controls}>
-                <TouchableOpacity style={[styles.button, styles.resetButton]} onPress={resetTimer}>
-                    <Ionicons name="refresh" size={24} color="#CE1141" />
-                </TouchableOpacity>
+            {/* Left: Reset */}
+            <TouchableOpacity style={styles.smallButton} onPress={resetTimer}>
+                <Ionicons name="refresh" size={20} color="#CE1141" />
+            </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={[styles.button, styles.mainButton, isActive ? styles.stopButton : styles.startButton]}
-                    onPress={toggleTimer}
-                >
-                    <Ionicons name={isActive ? "pause" : "play"} size={32} color="#ffffff" />
-                </TouchableOpacity>
+            {/* Middle: Timer */}
+            <Text style={styles.timeText}>{formatTime(seconds)}</Text>
 
-                {/* Placeholder for future lap feature or just invisible balancer */}
-                <View style={[styles.button, { backgroundColor: 'transparent' }]} />
-            </View>
+            {/* Right: Play/Pause */}
+            <TouchableOpacity
+                style={[styles.playButton, isActive ? styles.stopButton : styles.startButton]}
+                onPress={toggleTimer}
+            >
+                <Ionicons name={isActive ? "pause" : "play"} size={20} color="#ffffff" />
+            </TouchableOpacity>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         backgroundColor: '#1c1c1e',
-        padding: 20,
+        paddingVertical: 16,
+        paddingHorizontal: 30,
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         borderTopWidth: 1,
         borderTopColor: '#2c2c2e',
     },
-    displayContainer: {
-        alignItems: 'center',
-        marginBottom: 20,
-    },
     timeText: {
-        fontSize: 64,
+        fontSize: 32,
         fontVariant: ['tabular-nums'],
-        fontWeight: 'bold',
+        fontWeight: '700',
         color: '#ffffff',
         letterSpacing: 2,
     },
-    controls: {
-        flexDirection: 'row',
-        justifyContent: 'space-between', // Change to space-between to spread reset and play
-        alignItems: 'center',
-        paddingHorizontal: 20,
-    },
-    button: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
+    smallButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(206, 17, 65, 0.15)',
         alignItems: 'center',
         justifyContent: 'center',
     },
-    resetButton: {
-        backgroundColor: 'rgba(206, 17, 65, 0.15)',
-    },
-    mainButton: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        elevation: 4,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
+    playButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     startButton: {
         backgroundColor: '#34C759',

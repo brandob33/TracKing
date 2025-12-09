@@ -1,3 +1,4 @@
+import { useAuth } from '@/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -11,6 +12,7 @@ const UCI_GOLD = '#FDC82F';
 export default function WorkoutScreen() {
     const params = useLocalSearchParams();
     const router = useRouter();
+    const { completeWorkout } = useAuth();
 
     const dayName = typeof params.day === 'string' ? params.day : 'Today';
     const workoutTitle = typeof params.title === 'string' ? params.title : 'Speed & Power';
@@ -37,8 +39,11 @@ export default function WorkoutScreen() {
     };
 
     const handleSave = () => {
-        Alert.alert("Success", "Workout updated successfully!", [
-            { text: "OK", onPress: () => router.back() }
+        // Mark workout as complete in global context
+        completeWorkout(dayName);
+
+        Alert.alert("Success", "Workout completed!", [
+            { text: "View Stats", onPress: () => router.push('/(tabs)/stats') }
         ]);
     };
 
@@ -49,6 +54,12 @@ export default function WorkoutScreen() {
                 headerStyle: { backgroundColor: UCI_BLUE },
                 headerTintColor: UCI_GOLD,
                 headerTitleStyle: { fontWeight: 'bold' },
+                headerLeft: () => (
+                    <TouchableOpacity onPress={() => router.back()} style={{ marginLeft: 10 }}>
+                        <Ionicons name="arrow-back-circle" size={32} color={UCI_GOLD} />
+                    </TouchableOpacity>
+                ),
+                headerRight: () => null,
             }} />
 
             <KeyboardAvoidingView
@@ -90,7 +101,7 @@ export default function WorkoutScreen() {
                                 <Text style={[styles.col, styles.colRep]}>{rep}</Text>
                                 <Text style={[styles.col, styles.colTarget]}>4.20s</Text>
                                 <Text style={[styles.col, styles.colRest]}>3'</Text>
-                                <View style={[styles.col, styles.colInput]}>
+                                <View style={[styles.colInput]}>
                                     <TextInput
                                         style={styles.input}
                                         placeholder="--"
@@ -146,6 +157,8 @@ export default function WorkoutScreen() {
                             <Ionicons name="checkmark-circle" size={24} color={UCI_BLUE} />
                         </LinearGradient>
                     </TouchableOpacity>
+
+
 
                 </ScrollView>
             </KeyboardAvoidingView>
