@@ -1,28 +1,51 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Stack, useLocalSearchParams } from 'expo-router';
-import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import WorkoutTimer from '../components/WorkoutTimer';
 
 const UCI_BLUE = '#002855';
 const UCI_GOLD = '#FDC82F';
 
 export default function WorkoutScreen() {
-    const { day } = useLocalSearchParams();
-    const dayName = typeof day === 'string' ? day : 'Today';
+    const params = useLocalSearchParams();
+    const router = useRouter();
 
-    // State to track inputs. In a real app, this would be a more complex object or form library.
+    const dayName = typeof params.day === 'string' ? params.day : 'Today';
+    const workoutTitle = typeof params.title === 'string' ? params.title : 'Speed & Power';
+    const initialDataStr = typeof params.initialData === 'string' ? params.initialData : '';
+
+    // State to track inputs
     const [inputs, setInputs] = useState<Record<string, string>>({});
+
+    // Initialize data if present
+    useEffect(() => {
+        if (initialDataStr) {
+            const times = initialDataStr.split(',');
+            const newInputs: Record<string, string> = {};
+            times.forEach((t, index) => {
+                // Map index 0 to rep-1, index 1 to rep-2, etc. (1-based rep ID)
+                newInputs[`rep-${index + 1}`] = t;
+            });
+            setInputs(newInputs);
+        }
+    }, [initialDataStr]);
 
     const handleInputChange = (id: string, text: string) => {
         setInputs(prev => ({ ...prev, [id]: text }));
     };
 
+    const handleSave = () => {
+        Alert.alert("Success", "Workout updated successfully!", [
+            { text: "OK", onPress: () => router.back() }
+        ]);
+    };
+
     return (
         <View style={styles.container}>
             <Stack.Screen options={{
-                title: `${dayName}'s Workout`,
+                title: initialDataStr ? `${dayName}` : `${dayName}'s Workout`,
                 headerStyle: { backgroundColor: UCI_BLUE },
                 headerTintColor: UCI_GOLD,
                 headerTitleStyle: { fontWeight: 'bold' },
@@ -35,8 +58,10 @@ export default function WorkoutScreen() {
                 <ScrollView contentContainerStyle={styles.scrollContent}>
                     {/* Workout Header */}
                     <View style={styles.summaryCard}>
-                        <Text style={styles.workoutName}>Speed & Power</Text>
-                        <Text style={styles.workoutFocus}>Focus: Max Velocity</Text>
+                        <Text style={styles.workoutName}>{workoutTitle}</Text>
+                        <Text style={styles.workoutFocus}>
+                            {initialDataStr ? 'Reviewing Past Performance' : 'Focus: Max Velocity'}
+                        </Text>
                     </View>
 
                     {/* Warm Up */}
@@ -109,13 +134,15 @@ export default function WorkoutScreen() {
                         </View>
                     </View>
 
-                    {/* Complete Button */}
-                    <TouchableOpacity style={styles.completeBtn} activeOpacity={0.8}>
+                    {/* Complete/Update Button */}
+                    <TouchableOpacity style={styles.completeBtn} activeOpacity={0.8} onPress={handleSave}>
                         <LinearGradient
                             colors={[UCI_GOLD, '#e5b000']}
                             style={styles.gradientBtn}
                         >
-                            <Text style={styles.completeBtnText}>COMPLETE WORKOUT</Text>
+                            <Text style={styles.completeBtnText}>
+                                {initialDataStr ? 'UPDATE WORKOUT' : 'COMPLETE WORKOUT'}
+                            </Text>
                             <Ionicons name="checkmark-circle" size={24} color={UCI_BLUE} />
                         </LinearGradient>
                     </TouchableOpacity>
