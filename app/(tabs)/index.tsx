@@ -1,590 +1,240 @@
-import React from "react";
-import { SafeAreaView, View, ScrollView, Image, Text, } from "react-native";
-export default () => {
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Link } from 'expo-router';
+import React, { useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+// UCI Colors
+const UCI_BLUE = '#002855';
+const UCI_GOLD = '#FDC82F';
+
+// Mock Data for Workouts
+const SCHEDULE: Record<string, { title: string; focus: string; duration: string }> = {
+	'Mon': { title: 'Speed & Power', focus: 'Block Starts & Flying 30s', duration: '90m' },
+	'Tue': { title: 'Tempo Endurance', focus: '200m Repeats', duration: '75m' },
+	'Wed': { title: 'Recovery', focus: 'Circuit & Mobility', duration: '45m' },
+	'Thu': { title: 'Speed Endurance', focus: '150m Flys (Sub-max)', duration: '80m' },
+	'Fri': { title: 'Pre-Meet Shakeout', focus: 'Blocks & Reaction', duration: '40m' },
+	'Sat': { title: 'Meet Day / Rest', focus: 'Competition', duration: '3h' },
+	'Sun': { title: 'Active Recovery', focus: 'Long Walk / Yoga', duration: '60m' },
+};
+
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+export default function MainMenu() {
+	const [selectedDate, setSelectedDate] = useState<number>(new Date().getDay());
+
+	const today = new Date();
+	const currentDayName = DAYS[selectedDate];
+	const workout = SCHEDULE[currentDayName] || SCHEDULE['Mon']; // Fallback
+
+	// Generate Week Dates (Static for demo relative to current selected index as pseudo-mock)
+	// Real app would use actual date logic. Here we just map 0-6 to the week days.
+	const weekDates = DAYS.map((d, index) => {
+		// Just for visual flair, let's say Sun is day 10, Mon 11, etc.
+		return { day: d, date: 10 + index, index };
+	});
+
 	return (
-		<SafeAreaView 
-			style={{
-				flex: 1,
-				backgroundColor: "#FFFFFF",
-			}}>
-			<ScrollView  
-				style={{
-					flex: 1,
-					backgroundColor: "#FFFFFF",
-				}}>
-				<View 
-					style={{
-						flexDirection: "row",
-						justifyContent: "space-between",
-						alignItems: "center",
-						marginTop: 58,
-						marginBottom: 142,
-						marginHorizontal: 16,
-					}}>
-					<Image
-						source = {{uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/Y6HTvlzwKN/faps2dfm_expires_30_days.png"}} 
-						resizeMode = {"stretch"}
-						style={{
-							width: 24,
-							height: 24,
-						}}
-					/>
-					<Text 
-						style={{
-							color: "#000000",
-							fontSize: 20,
-							fontWeight: "bold",
-						}}>
-						{"TracKing"}
-					</Text>
-					<Image
-						source = {{uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/Y6HTvlzwKN/xtr6zjl2_expires_30_days.png"}} 
-						resizeMode = {"stretch"}
-						style={{
-							width: 24,
-							height: 24,
-						}}
-					/>
+		<SafeAreaView style={styles.container}>
+			<ScrollView contentContainerStyle={styles.scrollContent}>
+				<View style={styles.header}>
+					<Text style={styles.greeting}>Track & Field</Text>
+					<Text style={styles.date}>UCI Anteaters</Text>
 				</View>
-				<View 
-					style={{
-						marginBottom: 102,
-						marginHorizontal: 14,
-					}}>
-					<View 
-						style={{
-							marginBottom: 102,
-							marginHorizontal: 21,
-						}}>
-						<View >
-							<View 
-								style={{
-									backgroundColor: "#FFFFFF",
-									borderRadius: 8,
-									paddingTop: 24,
-									paddingBottom: 22,
-									paddingHorizontal: 24,
-									shadowColor: "#00000017",
-									shadowOpacity: 0.1,
-									shadowOffset: {
-									    width: 2,
-									    height: 16
-									},
-									shadowRadius: 19,
-									elevation: 19,
-								}}>
-								<View 
-									style={{
-										flexDirection: "row",
-										justifyContent: "space-between",
-										backgroundColor: "#FFFFFF",
-										marginBottom: 22,
-									}}>
-									<Image
-										source = {{uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/Y6HTvlzwKN/ea0dpag1_expires_30_days.png"}} 
-										resizeMode = {"stretch"}
-										style={{
-											width: 16,
-											height: 16,
-										}}
-									/>
-									<Text 
-										style={{
-											color: "#4A5660",
-											fontSize: 14,
-											fontWeight: "bold",
-										}}>
-										{"September 2021"}
-									</Text>
-									<Image
-										source = {{uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/Y6HTvlzwKN/en9oh335_expires_30_days.png"}} 
-										resizeMode = {"stretch"}
-										style={{
-											width: 16,
-											height: 16,
-										}}
-									/>
+
+				{/* Horizontal Calendar Strip */}
+				<View style={styles.calendarContainer}>
+					{weekDates.map((item) => {
+						const isSelected = selectedDate === item.index;
+						return (
+							<TouchableOpacity
+								key={item.day}
+								style={[styles.dayItem, isSelected && styles.dayItemActive]}
+								onPress={() => setSelectedDate(item.index)}
+							>
+								<Text style={[styles.dayName, isSelected && styles.dayNameActive]}>{item.day}</Text>
+								<Text style={[styles.dayNumber, isSelected && styles.dayNumberActive]}>{item.date}</Text>
+							</TouchableOpacity>
+						);
+					})}
+				</View>
+
+				<Text style={styles.sectionHeader}>SCHEDULED WORKOUT</Text>
+
+				{/* Dynamic Workout Card */}
+				<Link href={{ pathname: '/workout', params: { day: currentDayName } }} asChild>
+					<TouchableOpacity activeOpacity={0.9} style={styles.mainCardContainer}>
+						<LinearGradient
+							colors={[UCI_BLUE, '#1b3d6d']}
+							style={styles.mainCard}
+							start={{ x: 0, y: 0 }}
+							end={{ x: 1, y: 1 }}
+						>
+							<View style={styles.cardHeaderRow}>
+								<View style={styles.badge}>
+									<Text style={styles.badgeText}>TODAY</Text>
 								</View>
-								<View 
-									style={{
-										paddingTop: 8,
-										paddingBottom: 11,
-										paddingHorizontal: 6,
-									}}>
-									<View 
-										style={{
-											flexDirection: "row",
-											marginBottom: 26,
-										}}>
-										<View 
-											style={{
-												flex: 1,
-												alignItems: "center",
-												paddingTop: 0,
-												paddingBottom: 0,
-												marginRight: 32,
-											}}>
-											<Text 
-												style={{
-													color: "#4A5660",
-													fontSize: 16,
-													fontWeight: "bold",
-												}}>
-												{"1"}
-											</Text>
-										</View>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												textAlign: "center",
-												marginRight: 29,
-												flex: 1,
-											}}>
-											{"2"}
-										</Text>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												textAlign: "center",
-												marginRight: 29,
-												flex: 1,
-											}}>
-											{"3"}
-										</Text>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												textAlign: "center",
-												marginRight: 29,
-												flex: 1,
-											}}>
-											{"4"}
-										</Text>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												textAlign: "center",
-												marginRight: 30,
-												flex: 1,
-											}}>
-											{"5"}
-										</Text>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												textAlign: "center",
-												marginRight: 29,
-												flex: 1,
-											}}>
-											{"6"}
-										</Text>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												textAlign: "center",
-												flex: 1,
-											}}>
-											{"7"}
-										</Text>
-									</View>
-									<View 
-										style={{
-											flexDirection: "row",
-											marginBottom: 18,
-										}}>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												textAlign: "center",
-												marginRight: 29,
-												flex: 1,
-											}}>
-											{"8"}
-										</Text>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												textAlign: "center",
-												marginRight: 25,
-												flex: 1,
-											}}>
-											{"9"}
-										</Text>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												textAlign: "center",
-												marginRight: 20,
-												flex: 1,
-											}}>
-											{"10"}
-										</Text>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												textAlign: "center",
-												marginRight: 22,
-												flex: 1,
-											}}>
-											{"11"}
-										</Text>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												textAlign: "center",
-												marginRight: 20,
-												flex: 1,
-											}}>
-											{"12"}
-										</Text>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												textAlign: "center",
-												marginRight: 20,
-												flex: 1,
-											}}>
-											{"13"}
-										</Text>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												textAlign: "center",
-												flex: 1,
-											}}>
-											{"14"}
-										</Text>
-									</View>
-									<View 
-										style={{
-											alignSelf: "flex-start",
-											flexDirection: "row",
-											alignItems: "center",
-											marginBottom: 16,
-										}}>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												marginRight: 20,
-											}}>
-											{"15"}
-										</Text>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												marginRight: 20,
-											}}>
-											{"16"}
-										</Text>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												marginRight: 20,
-											}}>
-											{"17"}
-										</Text>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												marginRight: 14,
-											}}>
-											{"18"}
-										</Text>
-										<View 
-											style={{
-												backgroundColor: "#F04D23",
-												borderRadius: 29,
-												paddingTop: 8,
-												paddingBottom: 10,
-												paddingHorizontal: 6,
-												marginRight: 14,
-											}}>
-											<Text 
-												style={{
-													color: "#FFFFFF",
-													fontSize: 16,
-													fontWeight: "bold",
-												}}>
-												{"19"}
-											</Text>
-										</View>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												marginRight: 20,
-											}}>
-											{"20"}
-										</Text>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-											}}>
-											{"21"}
-										</Text>
-									</View>
-									<View 
-										style={{
-											flexDirection: "row",
-											marginBottom: 28,
-										}}>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												textAlign: "center",
-												marginRight: 20,
-												flex: 1,
-											}}>
-											{"22"}
-										</Text>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												textAlign: "center",
-												marginRight: 20,
-												flex: 1,
-											}}>
-											{"23"}
-										</Text>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												textAlign: "center",
-												marginRight: 20,
-												flex: 1,
-											}}>
-											{"24"}
-										</Text>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												textAlign: "center",
-												marginRight: 20,
-												flex: 1,
-											}}>
-											{"25"}
-										</Text>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												textAlign: "center",
-												marginRight: 20,
-												flex: 1,
-											}}>
-											{"26"}
-										</Text>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												textAlign: "center",
-												marginRight: 20,
-												flex: 1,
-											}}>
-											{"27"}
-										</Text>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												textAlign: "center",
-												flex: 1,
-											}}>
-											{"28"}
-										</Text>
-									</View>
-									<View 
-										style={{
-											alignSelf: "flex-start",
-											flexDirection: "row",
-										}}>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												marginRight: 19,
-											}}>
-											{"29"}
-										</Text>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-												marginRight: 19,
-											}}>
-											{"30"}
-										</Text>
-										<Text 
-											style={{
-												color: "#4A5660",
-												fontSize: 16,
-												fontWeight: "bold",
-											}}>
-											{"31"}
-										</Text>
-									</View>
+								<Ionicons name="stats-chart" size={24} color={UCI_GOLD} />
+							</View>
+
+							<Text style={styles.mainCardTitle}>{workout.title}</Text>
+							<Text style={styles.mainCardSubtitle}>{workout.focus}</Text>
+
+							<View style={styles.cardFooter}>
+								<View style={styles.metaRow}>
+									<Ionicons name="time-outline" size={16} color="#ccc" />
+									<Text style={styles.metaText}>{workout.duration}</Text>
+								</View>
+								<View style={styles.startBtn}>
+									<Text style={styles.startBtnText}>START</Text>
+									<Ionicons name="arrow-forward" size={16} color={UCI_BLUE} />
 								</View>
 							</View>
-							<View 
-								style={{
-									position: "absolute",
-									bottom: -107,
-									right: -21,
-									left: -21,
-									backgroundColor: "#FFFFFF",
-									borderColor: "#DFDFDF",
-									borderRadius: 8,
-									borderWidth: 1,
-									paddingVertical: 16,
-									paddingLeft: 16,
-								}}>
-								<Text 
-									style={{
-										color: "#000000",
-										fontSize: 14,
-										fontWeight: "bold",
-										marginBottom: 8,
-									}}>
-									{"Supplementals"}
-								</Text>
-								<Text 
-									style={{
-										color: "#000000",
-										fontSize: 12,
-										width: 98,
-									}}>
-									{"Warmup C\nCooldown B\nHurdle Mobility  E"}
-								</Text>
-							</View>
-						</View>
-						<View 
-							style={{
-								position: "absolute",
-								top: -128,
-								right: -19,
-								left: -19,
-								backgroundColor: "#FFFFFF",
-								borderColor: "#DFDFDF",
-								borderRadius: 8,
-								borderWidth: 1,
-								paddingVertical: 16,
-								paddingLeft: 16,
-							}}>
-							<Text 
-								style={{
-									color: "#000000",
-									fontSize: 14,
-									fontWeight: "bold",
-									marginBottom: 8,
-								}}>
-								{"Today’s Workout"}
-							</Text>
-							<Text 
-								style={{
-									color: "#000000",
-									fontSize: 28,
-									fontWeight: "bold",
-									marginBottom: 8,
-								}}>
-								{"3x2x250’s @ 85%"}
-							</Text>
-							<Text 
-								style={{
-									color: "#828282",
-									fontSize: 12,
-									marginBottom: 8,
-								}}>
-								{"Notes: 13.5s / 100m."}
-							</Text>
-							<Text 
-								style={{
-									color: "#828282",
-									fontSize: 12,
-								}}>
-								{"Rest: 6 minutes / 4  minutes."}
-							</Text>
-						</View>
-					</View>
-					<View 
-						style={{
-							backgroundColor: "#FFFFFF",
-							borderColor: "#DFDFDF",
-							borderRadius: 8,
-							borderWidth: 1,
-							paddingVertical: 16,
-							paddingLeft: 16,
-						}}>
-						<Text 
-							style={{
-								color: "#000000",
-								fontSize: 14,
-								fontWeight: "bold",
-								marginBottom: 8,
-							}}>
-							{"Recovery"}
-						</Text>
-						<Text 
-							style={{
-								color: "#000000",
-								fontSize: 12,
-								width: 96,
-							}}>
-							{"Roll out + Stretch\nContrast\nSleep"}
-						</Text>
-					</View>
-				</View>
+						</LinearGradient>
+					</TouchableOpacity>
+				</Link>
 			</ScrollView>
 		</SafeAreaView>
-	)
+	);
 }
+
+const styles = StyleSheet.create({
+	container: {
+		flex: 1,
+		backgroundColor: '#000000',
+	},
+	scrollContent: {
+		padding: 20,
+	},
+	header: {
+		marginBottom: 20,
+		marginTop: 10,
+	},
+	greeting: {
+		fontSize: 28,
+		fontWeight: '800',
+		color: '#ffffff',
+		textTransform: 'uppercase',
+	},
+	date: {
+		fontSize: 16,
+		color: UCI_GOLD,
+		fontWeight: '600',
+		marginTop: 4,
+		textTransform: 'uppercase',
+		letterSpacing: 1,
+	},
+	calendarContainer: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		marginBottom: 30,
+		backgroundColor: '#1c1c1e',
+		padding: 12,
+		borderRadius: 16,
+	},
+	dayItem: {
+		alignItems: 'center',
+		paddingVertical: 8,
+		paddingHorizontal: 10,
+		borderRadius: 12,
+	},
+	dayItemActive: {
+		backgroundColor: UCI_BLUE,
+	},
+	dayName: {
+		color: '#8e8e93',
+		fontSize: 12,
+		marginBottom: 4,
+	},
+	dayNameActive: {
+		color: '#aaccee',
+	},
+	dayNumber: {
+		color: '#ffffff',
+		fontSize: 16,
+		fontWeight: 'bold',
+	},
+	dayNumberActive: {
+		color: '#ffffff',
+	},
+	sectionHeader: {
+		color: '#ffffff',
+		fontSize: 14,
+		fontWeight: 'bold',
+		marginBottom: 12,
+		marginLeft: 4,
+		opacity: 0.8,
+	},
+	mainCardContainer: {
+		marginBottom: 24,
+		borderRadius: 24,
+		shadowColor: UCI_BLUE,
+		shadowOffset: { width: 0, height: 8 },
+		shadowOpacity: 0.4,
+		shadowRadius: 12,
+		elevation: 8,
+	},
+	mainCard: {
+		borderRadius: 24,
+		padding: 24,
+		borderWidth: 1,
+		borderColor: 'rgba(255,255,255,0.1)',
+	},
+	cardHeaderRow: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		marginBottom: 16,
+	},
+	badge: {
+		backgroundColor: 'rgba(253, 200, 47, 0.2)', // Gold transparent
+		paddingHorizontal: 10,
+		paddingVertical: 4,
+		borderRadius: 8,
+	},
+	badgeText: {
+		color: UCI_GOLD,
+		fontSize: 10,
+		fontWeight: '800',
+	},
+	mainCardTitle: {
+		color: '#ffffff',
+		fontSize: 26,
+		fontWeight: 'bold',
+		marginBottom: 4,
+	},
+	mainCardSubtitle: {
+		color: '#ccc',
+		fontSize: 16,
+		marginBottom: 20,
+	},
+	cardFooter: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+	},
+	metaRow: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 6,
+	},
+	metaText: {
+		color: '#ccc',
+		fontSize: 14,
+	},
+	startBtn: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		backgroundColor: UCI_GOLD,
+		paddingHorizontal: 16,
+		paddingVertical: 8,
+		borderRadius: 20,
+		gap: 4,
+	},
+	startBtnText: {
+		color: UCI_BLUE,
+		fontWeight: 'bold',
+		fontSize: 12,
+	},
+});
