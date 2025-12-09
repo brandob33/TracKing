@@ -1,3 +1,4 @@
+import { useAuth } from '@/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -7,14 +8,15 @@ const UCI_BLUE = '#002855';
 const UCI_GOLD = '#FDC82F';
 
 export default function ProfileScreen() {
+    const { signOut } = useAuth();
 
-    const handleDeleteAccount = () => {
+    const handleSignOut = () => {
         Alert.alert(
-            "Delete Account",
-            "Are you sure you want to delete your account? This action cannot be undone.",
+            "Sign Out",
+            "Are you sure you want to sign out?",
             [
                 { text: "Cancel", style: "cancel" },
-                { text: "Delete", style: "destructive", onPress: () => console.log("Account deleted") }
+                { text: "Sign Out", style: "destructive", onPress: signOut }
             ]
         );
     };
@@ -69,9 +71,9 @@ export default function ProfileScreen() {
                 </View>
 
                 {/* Danger Zone */}
-                <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount}>
-                    <Ionicons name="trash-outline" size={20} color="#ff3b30" />
-                    <Text style={styles.deleteText}>Delete Account</Text>
+                <TouchableOpacity style={styles.deleteButton} onPress={handleSignOut}>
+                    <Ionicons name="log-out-outline" size={20} color="#ff3b30" />
+                    <Text style={styles.deleteText}>Sign Out</Text>
                 </TouchableOpacity>
 
             </ScrollView>
