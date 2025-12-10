@@ -12,7 +12,7 @@ export default function SignIn() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const { signIn } = useAuth();
+    const { signIn, signOut } = useAuth();
     const router = useRouter();
 
     const handleSignIn = async () => {
@@ -26,9 +26,16 @@ export default function SignIn() {
         setLoading(false);
 
         if (!success) {
-            Alert.alert('Login Failed', 'Invalid credentials. Try athlete/athlete123');
+            Alert.alert('Login Failed', 'Please check your email and password.');
+        } else {
+            // Success! AuthContext will handle redirect based on role
+            console.log("Sign in successful, waiting for auto-redirect...");
         }
-        // Navigation is handled by the AuthContext effect
+    };
+
+    const handleClearSession = async () => {
+        await signOut();
+        Alert.alert('Session Cleared', 'Please try signing in again.');
     };
 
     return (
@@ -96,6 +103,10 @@ export default function SignIn() {
                         </TouchableOpacity>
                     </Link>
                 </View>
+
+                <TouchableOpacity onPress={handleClearSession} style={{ marginTop: 16, alignItems: 'center' }}>
+                    <Text style={{ color: '#8e8e93', fontSize: 14 }}>Having issues? Clear Session</Text>
+                </TouchableOpacity>
             </View>
         </View>
     );

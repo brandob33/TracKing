@@ -2,11 +2,40 @@
 # all models in this schema. Learn more about authorization rules here: https://docs.amplify.aws/cli/graphql/authorization-rules
 input AMPLIFY { globalAuthRule: AuthRule = { allow: public } } # FOR TESTING ONLY!
 
-type Todo @model
-@auth(rules: [
-  { allow: owner }  # the signed-in user can create/read/update/delete their own items
+type User @model @auth(rules: [
+  { allow: public, operations: [create] },
+  { allow: private, operations: [read, create] },
+  { allow: owner }
+]) {
+  id: ID!
+  username: String!
+  email: String
+  role: String
+  workouts: [Workout] @hasMany
+}
+
+type Workout @model @auth(rules: [
+  { allow: owner }
+]) {
+  id: ID!
+  title: String!
+  date: AWSDateTime
+  status: String
+  athleteId: ID!
+  coachId: ID
+  exercises: [Exercise] @hasMany
+}
+
+type Exercise @model @auth(rules: [
+  { allow: owner }
 ]) {
   id: ID!
   name: String!
-  description: String
+  sets: [ExerciseSet]
+}
+
+type ExerciseSet {
+  reps: Int
+  distance: Float
+  completed: Boolean
 }

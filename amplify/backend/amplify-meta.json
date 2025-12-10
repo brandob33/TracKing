@@ -1,92 +1,102 @@
 {
   "providers": {
     "awscloudformation": {
-      "AuthRoleName": "amplify-tracking-dev-15537-authRole",
-      "UnauthRoleArn": "arn:aws:iam::342857647052:role/amplify-tracking-dev-15537-unauthRole",
-      "AuthRoleArn": "arn:aws:iam::342857647052:role/amplify-tracking-dev-15537-authRole",
+      "AuthRoleName": "amplify-tracking-prod-71556-authRole",
+      "UnauthRoleArn": "arn:aws:iam::342857647052:role/amplify-tracking-prod-71556-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::342857647052:role/amplify-tracking-prod-71556-authRole",
       "Region": "us-west-1",
-      "DeploymentBucketName": "amplify-tracking-dev-15537-deployment",
-      "UnauthRoleName": "amplify-tracking-dev-15537-unauthRole",
-      "StackName": "amplify-tracking-dev-15537",
-      "StackId": "arn:aws:cloudformation:us-west-1:342857647052:stack/amplify-tracking-dev-15537/86f000c0-ae5e-11f0-92f8-0241f7dc4497",
-      "AmplifyAppId": "d3249ojqo5aumz"
-    }
-  },
-  "auth": {
-    "tracking4cb9162f": {
-      "service": "Cognito",
-      "providerPlugin": "awscloudformation",
-      "dependsOn": [],
-      "customAuth": false,
-      "frontendAuthConfig": {
-        "socialProviders": [],
-        "usernameAttributes": [
-          "EMAIL"
-        ],
-        "signupAttributes": [
-          "EMAIL"
-        ],
-        "passwordProtectionSettings": {
-          "passwordPolicyMinLength": 8,
-          "passwordPolicyCharacters": []
-        },
-        "mfaConfiguration": "OFF",
-        "mfaTypes": [
-          "SMS"
-        ],
-        "verificationMechanisms": [
-          "EMAIL"
-        ]
-      },
-      "providerMetadata": {
-        "s3TemplateURL": "https://s3.amazonaws.com/amplify-tracking-dev-15537-deployment/amplify-cfn-templates/auth/tracking4cb9162f-cloudformation-template.json",
-        "logicalId": "authtracking4cb9162f"
-      },
-      "lastPushTimeStamp": "2025-10-21T09:38:04.032Z",
-      "output": {
-        "UserPoolId": "us-west-1_m8n29oRPx",
-        "AppClientIDWeb": "6jpqkcnnas0cen33c4i84aa32b",
-        "AppClientID": "63maujpe5anvn33p3b77au36ht",
-        "IdentityPoolId": "us-west-1:ba72823c-b6c4-4d8c-8a5f-a92e6f9aa465",
-        "UserPoolArn": "arn:aws:cognito-idp:us-west-1:342857647052:userpool/us-west-1_m8n29oRPx",
-        "IdentityPoolName": "tracking4cb9162f_identitypool_4cb9162f__dev",
-        "UserPoolName": "tracking4cb9162f_userpool_4cb9162f"
-      },
-      "lastPushDirHash": "nnomxqX7Uw0gld1s+yDj6Rk0yAM="
+      "DeploymentBucketName": "amplify-tracking-prod-71556-deployment",
+      "UnauthRoleName": "amplify-tracking-prod-71556-unauthRole",
+      "StackName": "amplify-tracking-prod-71556",
+      "StackId": "arn:aws:cloudformation:us-west-1:342857647052:stack/amplify-tracking-prod-71556/80a45fe0-d4c4-11f0-be1b-021de7afe78f",
+      "AmplifyAppId": "d16o2tl092vajb"
     }
   },
   "api": {
     "TracKingAPI": {
-      "service": "AppSync",
-      "providerPlugin": "awscloudformation",
       "dependsOn": [
         {
-          "category": "auth",
-          "resourceName": "tracking4cb9162f",
           "attributes": [
             "UserPoolId"
-          ]
+          ],
+          "category": "auth",
+          "resourceName": "tracking4cb9162f"
         }
       ],
       "output": {
         "authConfig": {
+          "additionalAuthenticationProviders": [
+            {
+              "authenticationType": "API_KEY",
+              "apiKeyConfig": {
+                "apiKeyExpirationDays": 7,
+                "apiKeyExpirationDate": "2025-12-16T06:07:06.674Z",
+                "description": ""
+              }
+            }
+          ],
           "defaultAuthentication": {
             "authenticationType": "AMAZON_COGNITO_USER_POOLS",
             "userPoolConfig": {
               "userPoolId": "authtracking4cb9162f"
             }
-          },
-          "additionalAuthenticationProviders": []
+          }
         },
-        "GraphQLAPIIdOutput": "2mxpowwp3vb7xbsexgffmqmbke",
-        "GraphQLAPIEndpointOutput": "https://ljo6cyst75a5bpcgrsymyaa6na.appsync-api.us-west-1.amazonaws.com/graphql"
+        "GraphQLAPIIdOutput": "syssxcvt4fgfxkdjol3yspvvfi",
+        "GraphQLAPIEndpointOutput": "https://uvjxfezhxrcnnhn5et5rwm65sm.appsync-api.us-west-1.amazonaws.com/graphql",
+        "GraphQLAPIKeyOutput": "da2-p6x7ppd7inc3ddgk5iquafwqqm"
       },
+      "providerPlugin": "awscloudformation",
+      "service": "AppSync",
+      "lastPushTimeStamp": "2025-12-10T00:18:06.302Z",
       "providerMetadata": {
-        "s3TemplateURL": "https://s3.amazonaws.com/amplify-tracking-dev-15537-deployment/amplify-cfn-templates/api/cloudformation-template.json",
+        "s3TemplateURL": "https://s3.amazonaws.com/amplify-tracking-prod-71556-deployment/amplify-cfn-templates/api/cloudformation-template.json",
         "logicalId": "apiTracKingAPI"
       },
-      "lastPushTimeStamp": "2025-10-21T09:38:04.650Z",
-      "lastPushDirHash": "oZGx/vmcrHDY4TQ+1jL/6QkSUWQ="
+      "lastPushDirHash": "6GUiMXQDNiU64LsrMVWnbq0wI0I="
+    }
+  },
+  "auth": {
+    "tracking4cb9162f": {
+      "customAuth": false,
+      "dependsOn": [],
+      "frontendAuthConfig": {
+        "mfaConfiguration": "OFF",
+        "mfaTypes": [
+          "SMS"
+        ],
+        "passwordProtectionSettings": {
+          "passwordPolicyMinLength": 8,
+          "passwordPolicyCharacters": []
+        },
+        "signupAttributes": [
+          "EMAIL"
+        ],
+        "socialProviders": [],
+        "usernameAttributes": [
+          "EMAIL"
+        ],
+        "verificationMechanisms": [
+          "EMAIL"
+        ]
+      },
+      "providerPlugin": "awscloudformation",
+      "service": "Cognito",
+      "providerMetadata": {
+        "s3TemplateURL": "https://s3.amazonaws.com/amplify-tracking-prod-71556-deployment/amplify-cfn-templates/auth/tracking4cb9162f-cloudformation-template.json",
+        "logicalId": "authtracking4cb9162f"
+      },
+      "lastPushTimeStamp": "2025-12-10T00:18:05.322Z",
+      "output": {
+        "UserPoolId": "us-west-1_lvvGgmJ6D",
+        "AppClientIDWeb": "2p24j18l84eogehbaai40v21th",
+        "AppClientID": "19dat0ojcq2e2s03t4p5jphng",
+        "IdentityPoolId": "us-west-1:0dd3da43-afa2-45e7-bcef-6e2d6e038ebb",
+        "UserPoolArn": "arn:aws:cognito-idp:us-west-1:342857647052:userpool/us-west-1_lvvGgmJ6D",
+        "IdentityPoolName": "tracking4cb9162f_identitypool_4cb9162f__prod",
+        "UserPoolName": "tracking4cb9162f_userpool_4cb9162f"
+      },
+      "lastPushDirHash": "nnomxqX7Uw0gld1s+yDj6Rk0yAM="
     }
   }
 }

@@ -44,7 +44,7 @@ export default function MainMenu() {
 		<SafeAreaView style={styles.container}>
 			<ScrollView contentContainerStyle={styles.scrollContent}>
 				<View style={styles.header}>
-					<Text style={styles.greeting}>Hi {user?.name.split(' ')[0] || 'Athlete'}</Text>
+					<Text style={styles.greeting}>Hi {user?.username || 'Athlete'}</Text>
 					<Text style={styles.date}>UCI Anteaters</Text>
 				</View>
 

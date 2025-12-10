@@ -1,3 +1,4 @@
+import '@/src/polyfills';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -7,6 +8,11 @@ import 'react-native-reanimated';
 
 import { AuthProvider } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+
+import awsExports from '@/src/aws-exports';
+import { Amplify } from 'aws-amplify';
+
+Amplify.configure(awsExports);
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();

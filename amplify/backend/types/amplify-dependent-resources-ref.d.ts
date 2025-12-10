@@ -2,7 +2,8 @@ export type AmplifyDependentResourcesAttributes = {
   "api": {
     "TracKingAPI": {
       "GraphQLAPIEndpointOutput": "string",
-      "GraphQLAPIIdOutput": "string"
+      "GraphQLAPIIdOutput": "string",
+      "GraphQLAPIKeyOutput": "string"
     }
   },
   "auth": {

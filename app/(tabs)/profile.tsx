@@ -1,6 +1,8 @@
 import { useAuth } from '@/context/AuthContext';
+import { listWorkouts } from '@/src/graphql/queries';
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import { generateClient } from 'aws-amplify/api';
+import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -8,7 +10,52 @@ const UCI_BLUE = '#002855';
 const UCI_GOLD = '#FDC82F';
 
 export default function ProfileScreen() {
-    const { signOut } = useAuth();
+    const { signOut, user } = useAuth();
+    const client = generateClient();
+    const [stats, setStats] = useState({ total: 0, thisMonth: 0, trainingHours: 0 });
+
+    useEffect(() => {
+        if (user?.id) {
+            fetchStats();
+        }
+    }, [user]);
+
+    const fetchStats = async () => {
+        try {
+            // Fetch workouts for the logged-in user (athleteId filter)
+            const workoutData = await client.graphql({
+                query: listWorkouts,
+                variables: {
+                    filter: {
+                        athleteId: { eq: user?.id }
+                    }
+                }
+            });
+
+            // @ts-ignore
+            const workouts = workoutData.data.listWorkouts.items;
+
+            // Calculate Stats
+            const total = workouts.length;
+
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+
+            const thisMonth = workouts.filter((w: any) => {
+                const wDate = new Date(w.date);
+                return wDate.getMonth() === currentMonth && wDate.getFullYear() === currentYear;
+            }).length;
+
+            // Mock training hours logic (e.g. 1 hour per workout)
+            const trainingHours = total * 1;
+
+            setStats({ total, thisMonth, trainingHours });
+
+        } catch (error) {
+            console.error("Error fetching stats:", error);
+        }
+    };
 
     const handleSignOut = () => {
         Alert.alert(
@@ -16,7 +63,7 @@ export default function ProfileScreen() {
             "Are you sure you want to sign out?",
             [
                 { text: "Cancel", style: "cancel" },
-                { text: "Sign Out", style: "destructive", onPress: signOut }
+                { text: "Sign Out", style: "destructive", onPress: () => { signOut(); } }
             ]
         );
     };
@@ -35,27 +82,28 @@ export default function ProfileScreen() {
                             <Ionicons name="camera" size={14} color={UCI_BLUE} />
                         </TouchableOpacity>
                     </View>
-                    <Text style={styles.userName}>Brandon</Text>
+                    <Text style={styles.userName}>{user?.username || 'User'}</Text>
                     <Text style={styles.userRole}>Sprinter • UCI</Text>
                 </View>
 
                 {/* Stats Summary Card */}
                 <View style={styles.statsCard}>
                     <View style={styles.statItem}>
-                        <Text style={styles.statValue}>42</Text>
+                        <Text style={styles.statValue}>{stats.total}</Text>
                         <Text style={styles.statLabel}>Workouts</Text>
                     </View>
                     <View style={styles.statDivider} />
                     <View style={styles.statItem}>
-                        <Text style={styles.statValue}>12</Text>
+                        <Text style={styles.statValue}>{stats.thisMonth}</Text>
                         <Text style={styles.statLabel}>This Month</Text>
                     </View>
                     <View style={styles.statDivider} />
                     <View style={styles.statItem}>
-                        <Text style={styles.statValue}>8h</Text>
+                        <Text style={styles.statValue}>{stats.trainingHours}h</Text>
                         <Text style={styles.statLabel}>Training</Text>
                     </View>
                 </View>
+
 
                 {/* Settings/Info */}
                 <View style={styles.section}>

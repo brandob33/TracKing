@@ -5,7 +5,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 export default function WorkoutTimer() {
     const [seconds, setSeconds] = useState(0);
     const [isActive, setIsActive] = useState(false);
-    const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     useEffect(() => {
         if (isActive) {

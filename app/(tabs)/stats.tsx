@@ -1,66 +1,104 @@
 import { useAuth } from '@/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
+import { generateClient } from 'aws-amplify/api';
 import { Link } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const UCI_BLUE = '#002855';
 const UCI_GOLD = '#FDC82F';
 
-const INITIAL_HISTORY = [
-    {
-        id: '1',
-        date: 'Dec 07',
-        title: 'Block Starts',
-        times: ['4.21', '4.18', '4.25']
-    },
-    {
-        id: '2',
-        date: 'Dec 05',
-        title: 'Flying 30s',
-        times: ['2.95', '2.92', '2.88']
-    },
-    {
-        id: '3',
-        date: 'Dec 03',
-        title: 'Speed Endurance',
-        times: ['17.5', '17.8', '18.1']
-    },
-];
+// Custom Query to fetch workouts with nested exercises
+const listWorkoutsWithExercises = /* GraphQL */ `
+  query ListWorkouts($filter: ModelWorkoutFilterInput) {
+    listWorkouts(filter: $filter) {
+      items {
+        id
+        title
+        date
+        status
+        exercises {
+            items {
+                id
+                sets {
+                    distance
+                }
+            }
+        }
+      }
+    }
+  }
+`;
 
 export default function StatsScreen() {
-    const { completedWorkouts } = useAuth();
+    const { user, completedWorkouts } = useAuth(); // Depend on user and completedWorkouts
+    const client = generateClient();
     const [localHistory, setLocalHistory] = useState<any[]>([]);
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [refreshing, setRefreshing] = useState(false);
 
-    // Merge completed workouts with history on mount or update
+    const fetchWorkouts = useCallback(async () => {
+        if (!user) return;
+        try {
+            const result = await client.graphql({
+                query: listWorkoutsWithExercises,
+                variables: {
+                    filter: { athleteId: { eq: user.id } }
+                }
+            });
+
+            // @ts-ignore
+            const items = result.data.listWorkouts.items;
+
+            // Transform data for UI
+            const formattedHistory = items.map((w: any) => {
+                // Flatten sets from all exercises (assuming simplistic 'distance' holds the time)
+                const allTimes: string[] = [];
+                // @ts-ignore
+                if (w.exercises && w.exercises.items) {
+                    // @ts-ignore
+                    w.exercises.items.forEach((ex: any) => {
+                        // @ts-ignore
+                        if (ex.sets) {
+                            // @ts-ignore
+                            ex.sets.forEach((s: any) => {
+                                if (s.distance) {
+                                    allTimes.push(s.distance.toString());
+                                }
+                            });
+                        }
+                    });
+                }
+
+                return {
+                    id: w.id,
+                    date: new Date(w.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+                    title: w.title,
+                    times: allTimes,
+                    fullDate: w.date // Keep full ISO date for sorting if needed
+                };
+            });
+
+            // Sort by date descending
+            formattedHistory.sort((a: any, b: any) => new Date(b.fullDate).getTime() - new Date(a.fullDate).getTime());
+
+            setLocalHistory(formattedHistory);
+        } catch (error) {
+            console.error("Error fetching workouts:", error);
+        }
+    }, [user]);
+
     useEffect(() => {
-        const newItems = completedWorkouts.map((day: string, index: number) => ({
-            id: `completed-${index}`,
-            date: 'Today',
-            title: 'Speed & Power',
-            times: ['4.15', '4.12', '4.20']
-        }));
+        fetchWorkouts();
+    }, [fetchWorkouts, completedWorkouts]); // Refetch when completedWorkouts changes (trigger from workout.tsx)
 
-        // Combine new items with initial history, but respect local deletions
-        // (In a real app, deletions would be persisted, here we just filter visually until reload)
-        // For this simple demo, we'll just reconstruct and let user delete from this session state
-        // If we want deletions to persist across tab switches in this session, we shouldn't overwrite localHistory 
-        // completely if it's already set. But dealing with "new" completed workouts adds complexity.
-        // Let's simpler approach: Reset to full list + filtered items. 
-        // Actually, easiest is: just initialize once and then append.
-
-        setLocalHistory(prev => {
-            // If we have prev items, try to keep them, but checking for new completed ones is tricky without IDs.
-            // Let's just rebuild the list for this demo, ignoring complex sync.
-            return [
-                ...newItems,
-                ...INITIAL_HISTORY
-            ];
-        });
-    }, [completedWorkouts]);
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await fetchWorkouts();
+        setRefreshing(false);
+    }, [fetchWorkouts]);
 
     const toggleSelection = (id: string) => {
         const newSet = new Set(selectedIds);
@@ -167,7 +205,10 @@ export default function StatsScreen() {
                 </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={UCI_GOLD} />}
+            >
                 {localHistory.map(renderCard)}
 
                 {localHistory.length === 0 && (

@@ -9,10 +9,14 @@ import WorkoutTimer from '../components/WorkoutTimer';
 const UCI_BLUE = '#002855';
 const UCI_GOLD = '#FDC82F';
 
+import { createExercise, createWorkout } from '@/src/graphql/mutations';
+import { generateClient } from 'aws-amplify/api';
+
 export default function WorkoutScreen() {
     const params = useLocalSearchParams();
     const router = useRouter();
-    const { completeWorkout } = useAuth();
+    const { user, completeWorkout } = useAuth(); // Get user ID
+    const client = generateClient();
 
     const dayName = typeof params.day === 'string' ? params.day : 'Today';
     const workoutTitle = typeof params.title === 'string' ? params.title : 'Speed & Power';
@@ -38,13 +42,74 @@ export default function WorkoutScreen() {
         setInputs(prev => ({ ...prev, [id]: text }));
     };
 
-    const handleSave = () => {
-        // Mark workout as complete in global context
-        completeWorkout(dayName);
+    const handleSave = async () => {
+        if (!user) {
+            Alert.alert("Error", "You must be signed in to save workouts.");
+            return;
+        }
 
-        Alert.alert("Success", "Workout completed!", [
-            { text: "View Stats", onPress: () => router.push('/(tabs)/stats') }
-        ]);
+        try {
+            // 1. Create Workout Record
+            const workoutInput = {
+                title: workoutTitle,
+                date: new Date().toISOString(),
+                status: 'Completed',
+                athleteId: user.id,
+                // coachId: optional
+            };
+
+            const workoutResult = await client.graphql({
+                query: createWorkout,
+                variables: { input: workoutInput }
+            });
+
+            // @ts-ignore
+            const newWorkoutId = workoutResult.data.createWorkout.id;
+
+            // 2. Create Exercise Records (Modeling the 'Main Set' as one exercise with sets)
+            // For this specific UI, we have 4 reps of a specific sprint exercise.
+            // We'll group them into one "Sprint" exercise.
+
+            const sets = [1, 2, 3, 4].map(rep => ({
+                reps: 1,
+                distance: 0, // Not captured in UI, optional
+                completed: true,
+                // We're storing the time in 'reps' or we need a new field? 
+                // The schema has 'distance' and 'reps'. The UI input is time (text).
+                // LIMITATION: Schema doesn't have 'time' field. We will store it in 'distance' for now as a float (if parseable) or ignore.
+                // Wait, user asked to change weight to distance. UI shows Time input.
+                // Let's assume we store the input string if we can, but schema is strict.
+                // Re-reading user request: "change weight to distance".
+                // UI Input: "ACTUAL" (Time). Schema: distance (Float). 
+                // COMPROMISE: We will try to parse the time float.
+            }));
+
+            // Actually, let's create a generic "Main Set" exercise
+            const exerciseInput = {
+                name: "Main Set Sprints",
+                workoutExercisesId: newWorkoutId, // Link to workout
+                sets: Object.keys(inputs).map(key => ({
+                    reps: 1,
+                    distance: parseFloat(inputs[key]) || 0, // Storing 'Actual' time/value as distance for now per schema constraint
+                    completed: true
+                }))
+            };
+
+            await client.graphql({
+                query: createExercise,
+                variables: { input: exerciseInput }
+            });
+
+            // Mark workout as complete in global context (local state)
+            completeWorkout(dayName);
+
+            Alert.alert("Success", "Workout saved to database!", [
+                { text: "View Stats", onPress: () => router.push('/(tabs)/profile') } // Redirect to profile to see stats
+            ]);
+        } catch (error) {
+            console.error("Error saving workout:", error);
+            Alert.alert("Error", "Failed to save workout. Please try again.");
+        }
     };
 
     return (

@@ -19,5 +19,26 @@
         "TracKingAPI": {}
       }
     }
+  },
+  "prod": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-tracking-prod-71556-authRole",
+      "UnauthRoleArn": "arn:aws:iam::342857647052:role/amplify-tracking-prod-71556-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::342857647052:role/amplify-tracking-prod-71556-authRole",
+      "Region": "us-west-1",
+      "DeploymentBucketName": "amplify-tracking-prod-71556-deployment",
+      "UnauthRoleName": "amplify-tracking-prod-71556-unauthRole",
+      "StackName": "amplify-tracking-prod-71556",
+      "StackId": "arn:aws:cloudformation:us-west-1:342857647052:stack/amplify-tracking-prod-71556/80a45fe0-d4c4-11f0-be1b-021de7afe78f",
+      "AmplifyAppId": "d16o2tl092vajb"
+    },
+    "categories": {
+      "auth": {
+        "tracking4cb9162f": {}
+      },
+      "api": {
+        "TracKingAPI": {}
+      }
+    }
   }
 }
