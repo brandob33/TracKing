@@ -187,14 +187,21 @@ final class TrackBoardModel {
     }
 
     /// Stops the clock, keeps the times for naming, moves to the next rep, and starts the rest
-    /// counted from the last finisher.
+    /// counted from the last finisher. When only one athlete ran, there's nobody to tell
+    /// apart, so their time is saved right away instead of waiting to be named.
     func finish(_ session: GroupSession) {
         let lane = self.lane(session.id)
         guard let start = lane.startDate, let rep = currentRep(for: session) else { return }
         let runners = session.athletes(for: rep.set)
         let next = position(after: rep, in: session)
+        let soloRunner = runners.count == 1 ? runners.first : nil
+        if let soloRunner, let time = lane.splits.first {
+            rep.set.logSeconds(time, rep: rep.repNumber, athleteID: soloRunner.athleteID, byCoach: true)
+        }
         update(session.id) { lane in
-            if !lane.splits.isEmpty {
+            if let soloRunner, !lane.splits.isEmpty {
+                lane.lastOrder = [soloRunner.athleteID]
+            } else if !lane.splits.isEmpty {
                 lane.pending.append(CapturedRep(rep: rep, splits: lane.splits, athletes: runners))
             }
             lane.startDate = nil

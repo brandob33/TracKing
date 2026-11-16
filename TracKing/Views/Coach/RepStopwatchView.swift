@@ -332,6 +332,10 @@ struct RepStopwatchView: View {
     /// coach can place names while the athletes recover.
     private func finish() {
         placements = Array(repeating: nil, count: splits.count)
+        // Only one runner: their name goes on the first time, so the coach just taps Save.
+        if athletes.count == 1, !placements.isEmpty {
+            placements[0] = athletes[0].athleteID
+        }
         phase = .assign
 
         let rest = workoutSet.restSeconds(afterRep: repNumber)

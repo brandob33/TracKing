@@ -40,6 +40,7 @@ Out of scope for now: Firestore sync, importing workouts, editing workouts.
 - In the naming sheet, tap names in the order they finished. Each name goes on the fastest time that doesn't have a name yet. Tap a name that's already on a time to take it back off. There's no swapping.
 - **Same Order as Last Rep** fills in every name with one tap, when the order didn't change.
 - **Later** keeps the times waiting. **Discard Times** throws them away (for false starts).
+- When only one athlete runs a rep (for example, someone timed separately), there's nothing to name: Finish saves their time right away. In the Plan stopwatch, their name is already on the time, so the coach just taps Save.
 
 ### Time athletes separately (day groups)
 - From a card's menu, choose **Time Athletes Separately**, then pick athletes, for example Brandon and Justin practicing at a different time.
