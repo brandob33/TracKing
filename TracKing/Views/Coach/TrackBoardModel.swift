@@ -21,7 +21,8 @@ struct RepRef: Hashable {
 
     /// Rest after this rep, in seconds.
     var restSeconds: Int {
-        set.restSeconds(afterRep: repNumber)
+        // `self.` keeps Swift from reading a line that starts with `set` as a setter.
+        self.set.restSeconds(afterRep: repNumber)
     }
 }
 
