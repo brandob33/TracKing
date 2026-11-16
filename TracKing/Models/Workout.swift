@@ -68,6 +68,8 @@ final class Workout {
     var location: String
     /// Event groups the coach is running together this session (see `PracticeGroups.swift`).
     var groupCombinations: [GroupCombination] = []
+    /// Athletes the coach is timing apart from their group for this session only (see `PracticeGroups.swift`).
+    var dayGroups: [DayGroup] = []
     var week: TrainingWeek?
 
     @Relationship(deleteRule: .cascade, inverse: \WorkoutUnit.workout)

@@ -12,6 +12,8 @@ struct ContentView: View {
     @Query private var athletes: [Athlete]
     @Query private var eventGroups: [EventGroup]
     @AppStorage("appRole") private var role = AppRole.coach
+    /// Every group's clock and rest, kept here so timing carries on across tabs.
+    @State private var board = TrackBoardModel()
 
     /// The athlete using this device, as opposed to teammates on the coach's roster.
     private var deviceAthlete: Athlete? {
@@ -23,8 +25,8 @@ struct ContentView: View {
             switch role {
             case .coach:
                 TabView {
-                    Tab("Today", systemImage: "stopwatch.fill") {
-                        CoachTodayView()
+                    Tab("Workout", systemImage: "stopwatch.fill") {
+                        CoachWorkoutView()
                     }
                     Tab("Team", systemImage: "list.clipboard") {
                         CoachView()
@@ -51,6 +53,7 @@ struct ContentView: View {
                 .environment(\.athleteProfile, deviceAthlete?.profile ?? .sample)
             }
         }
+        .environment(board)
         .environment(\.eventGroupNames, Dictionary(eventGroups.map { ($0.groupID, $0.name) }, uniquingKeysWith: { first, _ in first }))
         .task {
             SampleData.seedIfNeeded(modelContext)

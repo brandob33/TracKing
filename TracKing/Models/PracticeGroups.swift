@@ -5,6 +5,26 @@ struct GroupCombination: Codable, Hashable {
     var groupIDs: [String]
 }
 
+/// A few athletes timed apart from their group for one session, e.g. Brandon and Justin
+/// practicing at a different time. Their times still go on the same workout, so they can
+/// finish it later, and their usual group carries on without them.
+struct DayGroup: Codable, Hashable, Identifiable {
+    var id: String = UUID().uuidString
+    var name: String
+    var athleteIDs: [String]
+
+    /// e.g. "Brandon", "Brandon & Justin", or "Brandon, Justin & Marcus".
+    static func name(for athletes: [Athlete]) -> String {
+        let names = athletes.map { $0.name.isEmpty ? "Unnamed" : $0.name }
+        switch names.count {
+        case 0: return "Separate Group"
+        case 1: return names[0]
+        case 2, 3: return names.dropLast().joined(separator: ", ") + " & " + names[names.count - 1]
+        default: return "\(names[0]), \(names[1]) + \(names.count - 2)"
+        }
+    }
+}
+
 extension Workout {
     /// The groups practicing in this session, in the coach's order. Combined groups come back
     /// as one entry, placed where their first group would be.
@@ -29,6 +49,23 @@ extension Workout {
         groupCombinations.append(GroupCombination(groupIDs: groupIDs))
     }
 
+    /// Times these athletes on their own for this session. They leave any other day group first.
+    @discardableResult
+    func splitOff(_ athletes: [Athlete]) -> DayGroup {
+        let ids = athletes.map(\.athleteID)
+        dayGroups = dayGroups
+            .map { DayGroup(id: $0.id, name: $0.name, athleteIDs: $0.athleteIDs.filter { !ids.contains($0) }) }
+            .filter { !$0.athleteIDs.isEmpty }
+        let group = DayGroup(name: DayGroup.name(for: athletes), athleteIDs: ids)
+        dayGroups.append(group)
+        return group
+    }
+
+    /// Sends a day group's athletes back to their usual groups. Times they logged stay.
+    func returnToGroups(_ dayGroupID: String) {
+        dayGroups.removeAll { $0.id == dayGroupID }
+    }
+
     /// Takes these groups out of any combination, so each runs on its own again.
     func separate(_ groupIDs: [String]) {
         groupCombinations = groupCombinations
@@ -42,23 +79,47 @@ extension Workout {
 struct GroupSession: Identifiable {
     let workout: Workout
     let groupIDs: [String]
+    /// Set when this is a few athletes timed apart from their group for the day.
+    let dayGroup: DayGroup?
 
-    /// Stable for the day, e.g. "shortSprint+shortHurdles".
-    var id: String { groupIDs.joined(separator: "+") }
-    /// Athletes in these groups, excluding this device's own profile.
+    /// Stable for the day, e.g. "shortSprint+shortHurdles", or "day.<id>" for a day group.
+    var id: String { dayGroup.map { "day.\($0.id)" } ?? groupIDs.joined(separator: "+") }
+    /// Athletes in these groups, excluding this device's own profile and anyone timed in a day group.
     let athletes: [Athlete]
 
     init(workout: Workout, groupIDs: [String], allAthletes: [Athlete]) {
         self.workout = workout
         self.groupIDs = groupIDs
-        self.athletes = allAthletes.filter { !$0.isDeviceUser && groupIDs.contains($0.eventGroupID) }
+        self.dayGroup = nil
+        let splitOff = Set(workout.dayGroups.flatMap(\.athleteIDs))
+        self.athletes = allAthletes.filter {
+            !$0.isDeviceUser && groupIDs.contains($0.eventGroupID) && !splitOff.contains($0.athleteID)
+        }
     }
 
-    /// Every group (or combination) practicing in a session, earliest start first.
-    /// Groups that start at the same time keep the coach's order.
+    init(workout: Workout, dayGroup: DayGroup, allAthletes: [Athlete]) {
+        self.workout = workout
+        self.dayGroup = dayGroup
+        let members = allAthletes.filter { dayGroup.athleteIDs.contains($0.athleteID) }
+        self.athletes = members
+        var ids: [String] = []
+        for athlete in members where !ids.contains(athlete.eventGroupID) {
+            ids.append(athlete.eventGroupID)
+        }
+        self.groupIDs = ids
+    }
+
+    /// Every group (or combination) practicing in a session, earliest start first, then any
+    /// day groups. Groups that start at the same time keep the coach's order. A group whose
+    /// athletes have all been split off into day groups is left out.
     static func all(in workout: Workout, groups: [EventGroup], athletes: [Athlete]) -> [GroupSession] {
-        workout.practiceGroups(from: groups)
+        let splitOff = Set(workout.dayGroups.flatMap(\.athleteIDs))
+        let regular = workout.practiceGroups(from: groups)
             .map { GroupSession(workout: workout, groupIDs: $0, allAthletes: athletes) }
+            .filter { session in
+                let everyone = athletes.filter { !$0.isDeviceUser && session.groupIDs.contains($0.eventGroupID) }
+                return !(session.athletes.isEmpty && everyone.contains { splitOff.contains($0.athleteID) })
+            }
             .enumerated()
             .sorted { lhs, rhs in
                 switch (lhs.element.startTime, rhs.element.startTime) {
@@ -69,6 +130,8 @@ struct GroupSession: Identifiable {
                 }
             }
             .map(\.element)
+        let day = workout.dayGroups.map { GroupSession(workout: workout, dayGroup: $0, allAthletes: athletes) }
+        return regular + day.filter { !$0.athletes.isEmpty }
     }
 
     /// What the coach sees: the groups' own plans, plus notes and sets aimed at men, women, or one of the athletes.
@@ -87,6 +150,10 @@ struct GroupSession: Identifiable {
     /// Who runs a set. When groups are combined they run the same workout, so a set written
     /// for any of them is run by all of them. Sets aimed at men, women, or one athlete stay with them.
     func athletes(for workoutSet: WorkoutSet) -> [Athlete] {
+        // A day group can mix groups, so each athlete runs only what their own group runs.
+        if dayGroup != nil {
+            return athletes.filter { $0.profile.canSee(workoutSet.groupID) }
+        }
         guard let setGroupID = workoutSet.groupID, !groupIDs.contains(setGroupID) else { return athletes }
         return athletes.filter { $0.profile.canSee(setGroupID) }
     }
