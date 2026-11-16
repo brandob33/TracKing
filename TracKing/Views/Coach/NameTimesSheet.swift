@@ -184,7 +184,7 @@ private struct NamedTimeRow: View {
                         .padding(.vertical, 8)
                         .frame(minWidth: 90)
                         .foregroundStyle(.white)
-                        .background(.tint, in: .capsule)
+                        .background(Theme.finishFill, in: .capsule)
                 }
                 .buttonStyle(.plain)
                 .accessibilityHint("Takes this name off the time")

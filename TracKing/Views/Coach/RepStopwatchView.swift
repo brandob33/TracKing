@@ -130,7 +130,7 @@ struct RepStopwatchView: View {
                     .frame(maxWidth: .infinity, minHeight: 160)
             }
             .buttonStyle(.borderedProminent)
-            .tint(.green)
+            .tint(Theme.goFill)
             .buttonBorderShape(.roundedRectangle(radius: 28))
             .disabled(athletes.isEmpty)
         }
@@ -152,7 +152,7 @@ struct RepStopwatchView: View {
 
             Text("\(splits.count) of \(athletes.count) finished")
                 .font(.headline)
-                .foregroundStyle(splits.count >= athletes.count ? .green : .secondary)
+                .foregroundStyle(splits.count >= athletes.count ? AnyShapeStyle(Theme.go) : AnyShapeStyle(.secondary))
 
             // Latest finishes first, so the coach can glance at the last few.
             ScrollView {
@@ -371,7 +371,7 @@ private struct SplitPad: View {
 
     var body: some View {
         RoundedRectangle(cornerRadius: 28)
-            .fill(isPressed ? Color.accentColor.opacity(0.7) : Color.accentColor)
+            .fill(isPressed ? Theme.finishFill.opacity(0.7) : Theme.finishFill)
             .overlay {
                 Text("Split")
                     .font(.system(size: 44, weight: .bold, design: .rounded))
@@ -518,7 +518,7 @@ private struct NameChip: View {
             .padding(.vertical, 8)
             .frame(minWidth: 80)
             .foregroundStyle(style == .placed ? AnyShapeStyle(.white) : AnyShapeStyle(.tint))
-            .background(style == .placed ? AnyShapeStyle(.tint) : AnyShapeStyle(.tint.opacity(0.15)), in: .capsule)
+            .background(style == .placed ? AnyShapeStyle(Theme.finishFill) : AnyShapeStyle(.tint.opacity(0.15)), in: .capsule)
     }
 }
 
@@ -536,7 +536,7 @@ private struct RestStatus: View {
                 .monospacedDigit()
         }
         .padding()
-        .background(.orange.opacity(0.15), in: .rect(cornerRadius: 16))
+        .background(Theme.rest.opacity(0.15), in: .rect(cornerRadius: 16))
         .accessibilityElement(children: .combine)
     }
 }

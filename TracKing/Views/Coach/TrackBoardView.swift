@@ -102,7 +102,7 @@ struct LaneCard: View {
             } else {
                 Label("All reps timed", systemImage: "checkmark.circle.fill")
                     .font(.headline)
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Theme.go)
             }
 
             PendingNames(pending: lane.pending, onName: onName)
@@ -124,7 +124,7 @@ struct LaneCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(lane.isCalled ? "On the line" : "Ready")
                     .font(.title2.bold())
-                    .foregroundStyle(lane.isCalled ? AnyShapeStyle(LaneColor.call) : AnyShapeStyle(.primary))
+                    .foregroundStyle(lane.isCalled ? AnyShapeStyle(Theme.goldText) : AnyShapeStyle(.primary))
                 Text(session.isPersonal ? "Just you" : runners == 1 ? "1 athlete" : "\(runners) athletes")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -141,7 +141,7 @@ struct LaneCard: View {
                 }
             }
             Spacer(minLength: 0)
-            TouchDownButton(title: "GO", color: .green, minHeight: 76) {
+            TouchDownButton(title: "GO", color: Theme.goFill, minHeight: 76) {
                 board.go(session, label: label)
             }
             .frame(width: 130)
@@ -155,13 +155,13 @@ struct LaneCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     RunningClock(startDate: lane.startDate ?? .now)
                         .font(.system(size: 44, weight: .bold, design: .rounded))
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Theme.blue)
                     Text("\(lane.splits.count) of \(runners) in")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
-                TouchDownButton(title: "Finish", subtitle: ordinal(lane.splits.count + 1) + " across", color: .blue, minHeight: 92) {
+                TouchDownButton(title: "Finish", subtitle: ordinal(lane.splits.count + 1) + " across", color: Theme.finishFill, minHeight: 92) {
                     board.split(session)
                 }
                 .frame(width: 130)
@@ -313,16 +313,16 @@ private struct StatusPill: View {
             color = Color.secondary
         } else if lane.isRunning {
             text = "Running"
-            color = Color.blue
+            color = Theme.blue
         } else if lane.rest != nil {
             text = lane.isRestPaused ? "Paused" : "Rest"
             color = LaneColor.rest
         } else if lane.isCalled {
             text = "Go"
-            color = LaneColor.call
+            color = Theme.goldText
         } else {
             text = "Ready"
-            color = Color.green
+            color = Theme.go
         }
         return Text(text.uppercased())
             .font(.caption2.weight(.bold))
@@ -364,7 +364,7 @@ struct RestBody: View {
                         }
                         .font(.system(size: large ? 72 : 44, weight: .bold, design: .rounded))
                         .monospacedDigit()
-                        .foregroundStyle(isEnding ? LaneColor.call : LaneColor.rest)
+                        .foregroundStyle(isEnding ? Theme.goldText : LaneColor.rest)
 
                         Text(paused == nil ? "Rest of \(TimeFormatting.rest(Int(total.rounded()))) · from last finisher" : "Rest paused")
                             .font(.caption)

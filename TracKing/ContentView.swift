@@ -50,6 +50,7 @@ struct ContentView: View {
                 }
             }
         }
+        .tint(Theme.blue)
         .environment(board)
         .environment(\.eventGroupNames, Dictionary(eventGroups.map { ($0.groupID, $0.name) }, uniquingKeysWith: { first, _ in first }))
         .task {

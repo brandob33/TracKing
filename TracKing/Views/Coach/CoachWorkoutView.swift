@@ -366,7 +366,7 @@ private struct CoachRepRow: View {
                 HStack(spacing: 12) {
                     Image(systemName: isDone ? "checkmark.circle.fill" : "stopwatch")
                         .font(.title2)
-                        .foregroundStyle(isDone ? AnyShapeStyle(.green) : AnyShapeStyle(.tint))
+                        .foregroundStyle(isDone ? AnyShapeStyle(Theme.go) : AnyShapeStyle(.tint))
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Rep \(repNumber) · \(workoutSet.repName)")
@@ -470,15 +470,15 @@ struct ComparisonIcon: View {
         switch comparison {
         case .faster:
             Image(systemName: "arrow.down.circle.fill")
-                .foregroundStyle(.blue)
+                .foregroundStyle(Theme.blue)
                 .accessibilityLabel("Faster than goal")
         case .onTarget:
             Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(.green)
+                .foregroundStyle(Theme.go)
                 .accessibilityLabel("On target")
         case .slower:
             Image(systemName: "arrow.up.circle.fill")
-                .foregroundStyle(.orange)
+                .foregroundStyle(Theme.rest)
                 .accessibilityLabel("Slower than goal")
         }
     }

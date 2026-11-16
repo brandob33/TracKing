@@ -105,13 +105,13 @@ private struct FocusLane: View {
                 Spacer()
                 Label("All reps timed", systemImage: "checkmark.circle.fill")
                     .font(.title2.bold())
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Theme.go)
                     .frame(maxWidth: .infinity)
                 Spacer()
             } else if lane.isRunning {
                 RunningClock(startDate: lane.startDate ?? .now)
                     .font(.system(size: 76, weight: .bold, design: .rounded))
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Theme.blue)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 SplitList(splits: lane.splits)
                 HStack(spacing: 10) {
@@ -133,7 +133,7 @@ private struct FocusLane: View {
                 TouchDownButton(
                     title: "Finish",
                     subtitle: "Tap as the \(ordinal(lane.splits.count + 1)) athlete crosses",
-                    color: .blue,
+                    color: Theme.finishFill,
                     minHeight: 240,
                     titleSize: 48
                 ) {
@@ -146,13 +146,13 @@ private struct FocusLane: View {
                 } else {
                     Text(lane.isCalled ? "On the line" : "Ready")
                         .font(.system(size: 48, weight: .bold, design: .rounded))
-                        .foregroundStyle(lane.isCalled ? AnyShapeStyle(LaneColor.call) : AnyShapeStyle(.primary))
+                        .foregroundStyle(lane.isCalled ? AnyShapeStyle(Theme.goldText) : AnyShapeStyle(.primary))
                 }
                 Spacer(minLength: 0)
                 TouchDownButton(
                     title: "GO",
                     subtitle: lane.rest != nil ? "Send them early" : nil,
-                    color: .green,
+                    color: Theme.goFill,
                     minHeight: 200,
                     titleSize: 56
                 ) {
@@ -198,11 +198,11 @@ private struct MiniLane: View {
                 if rep == nil {
                     Label("Done", systemImage: "checkmark")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Theme.go)
                 } else if let start = lane.startDate {
                     RunningClock(startDate: start)
                         .font(.title3.bold())
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Theme.blue)
                 } else if let rest = lane.rest {
                     Group {
                         if let paused = lane.pausedRestRemaining {
@@ -216,7 +216,7 @@ private struct MiniLane: View {
                     .monospacedDigit()
                     .foregroundStyle(LaneColor.rest)
                 } else {
-                    TouchDownButton(title: "GO", color: .green, minHeight: 34, titleSize: 17) {
+                    TouchDownButton(title: "GO", color: Theme.goFill, minHeight: 34, titleSize: 17) {
                         board.go(session, label: session.label(colorIndex: colorIndex, eventGroupNames: eventGroupNames))
                     }
                 }

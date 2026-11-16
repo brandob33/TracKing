@@ -69,17 +69,17 @@ struct MonthCalendarView: View {
             VStack(spacing: 3) {
                 Text(date, format: .dateTime.day())
                     .font(.body.weight(isToday || isSelected ? .bold : .regular))
-                    .foregroundStyle(isSelected ? Color.white : (isToday ? Color.accentColor : Color.primary))
+                    .foregroundStyle(isSelected ? Color.white : (isToday ? Theme.blue : Color.primary))
                     .frame(width: 34, height: 34)
                     .background {
                         if isSelected {
-                            Circle().fill(Color.accentColor)
+                            Circle().fill(Theme.finishFill)
                         } else if isToday {
-                            Circle().strokeBorder(Color.accentColor, lineWidth: 1.5)
+                            Circle().strokeBorder(Theme.blue, lineWidth: 1.5)
                         }
                     }
                 Circle()
-                    .fill(hasWorkout ? Color.accentColor : Color.clear)
+                    .fill(hasWorkout ? Theme.blue : Color.clear)
                     .frame(width: 5, height: 5)
             }
             .frame(maxWidth: .infinity, minHeight: 44)

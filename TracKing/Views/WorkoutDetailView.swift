@@ -118,7 +118,7 @@ struct RestTimerButton: View {
             .frame(minWidth: 64)
         }
         .buttonStyle(.bordered)
-        .tint(activeTimer == nil ? .accentColor : .orange)
+        .tint(activeTimer == nil ? Theme.blue : Theme.rest)
         .accessibilityLabel(activeTimer == nil ? "Start rest timer" : "Stop rest timer")
     }
 }
@@ -173,10 +173,10 @@ struct FocusBadge: View {
     var body: some View {
         Text(text.uppercased())
             .font(.caption2.weight(.bold))
-            .foregroundStyle(.orange)
+            .foregroundStyle(Theme.navy)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
-            .background(.orange.opacity(0.15), in: .capsule)
+            .background(Theme.gold, in: .capsule)
     }
 }
 

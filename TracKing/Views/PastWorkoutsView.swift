@@ -206,9 +206,9 @@ private struct SummaryStats: View {
 
         HStack {
             StatTile(value: "\(loggedReps)/\(totalReps)", label: "Logged")
-            StatTile(value: "\(comparisons.filter { $0 == .onTarget }.count)", label: "On Target", color: .green)
-            StatTile(value: "\(comparisons.filter { if case .faster = $0 { true } else { false } }.count)", label: "Faster", color: .blue)
-            StatTile(value: "\(comparisons.filter { if case .slower = $0 { true } else { false } }.count)", label: "Slower", color: .orange)
+            StatTile(value: "\(comparisons.filter { $0 == .onTarget }.count)", label: "On Target", color: Theme.go)
+            StatTile(value: "\(comparisons.filter { if case .faster = $0 { true } else { false } }.count)", label: "Faster", color: Theme.blue)
+            StatTile(value: "\(comparisons.filter { if case .slower = $0 { true } else { false } }.count)", label: "Slower", color: Theme.rest)
         }
     }
 }
@@ -282,9 +282,9 @@ private struct ComparisonBadge: View {
 
     var body: some View {
         let (text, color): (String, Color) = switch comparison {
-        case .faster(let by): ("−" + TimeFormatting.compactDelta(by), .blue)
-        case .onTarget: ("✓", .green)
-        case .slower(let by): ("+" + TimeFormatting.compactDelta(by), .orange)
+        case .faster(let by): ("−" + TimeFormatting.compactDelta(by), Theme.blue)
+        case .onTarget: ("✓", Theme.go)
+        case .slower(let by): ("+" + TimeFormatting.compactDelta(by), Theme.rest)
         }
 
         Text(text)

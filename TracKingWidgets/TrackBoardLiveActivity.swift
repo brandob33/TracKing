@@ -8,7 +8,7 @@ struct TrackBoardLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: TrackBoardActivityAttributes.self) { context in
             LockScreenView(title: context.attributes.workoutTitle, lanes: context.state.sortedLanes)
-                .activityBackgroundTint(Color.black.opacity(0.78))
+                .activityBackgroundTint(Theme.midnight.opacity(0.92))
                 .activitySystemActionForegroundColor(.white)
         } dynamicIsland: { context in
             let lanes = context.state.sortedLanes
@@ -29,7 +29,7 @@ struct TrackBoardLiveActivity: Widget {
                             .frame(maxWidth: 70, alignment: .leading)
                     }
                     .font(.caption2.weight(.semibold))
-                    .foregroundStyle(lane.isRunning ? Color.white : LaneColor.rest)
+                    .foregroundStyle(lane.isRunning ? Color.white : Theme.restOnDark)
                 }
             } compactTrailing: {
                 if let lane = lanes.first {
@@ -106,10 +106,10 @@ private struct LaneClock: View {
                     .foregroundStyle(.white)
             } else if let paused = lane.pausedRemaining {
                 Text(Duration.seconds(paused.rounded(.up)).formatted(.time(pattern: .minuteSecond)))
-                    .foregroundStyle(LaneColor.rest.opacity(0.6))
+                    .foregroundStyle(Theme.restOnDark.opacity(0.6))
             } else {
                 Text(timerInterval: lane.startDate...lane.endDate, countsDown: true)
-                    .foregroundStyle(LaneColor.rest)
+                    .foregroundStyle(Theme.restOnDark)
             }
         }
         .monospacedDigit()
