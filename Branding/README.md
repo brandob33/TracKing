@@ -17,3 +17,7 @@ The 400m oval with a crown on the top bend. Every file comes as an SVG (`svg/`) 
 Colors: track red `#B83A25`, crown gold `#F4B400`, infield green `#2E7D4F`, UCI blue `#0064A4`, UCI gold `#FFD200`, UCI dark blue `#1B3D6D`.
 
 The app icon lives in `TracKing/Assets.xcassets/AppIcon.appiconset` (a single 1024px image; Xcode generates the smaller sizes).
+
+## Explorations
+
+`explorations/` holds other directions that are not in use yet: Crown Band, Stadium View, Monoline, Crest, Crowned Hurdle and Lane Crown.
