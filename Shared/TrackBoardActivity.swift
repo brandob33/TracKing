@@ -30,6 +30,8 @@ nonisolated struct TrackBoardActivityAttributes: Codable, Hashable, Sendable {
         var startDate: Date
         /// When the rest ends. Unused while running.
         var endDate: Date
+        /// Seconds left when the coach paused the rest. The clock holds still while this is set.
+        var pausedRemaining: TimeInterval? = nil
     }
 
     var workoutTitle: String

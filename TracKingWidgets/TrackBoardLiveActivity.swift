@@ -104,6 +104,9 @@ private struct LaneClock: View {
             if lane.isRunning {
                 Text(timerInterval: lane.startDate...Date.distantFuture, countsDown: false)
                     .foregroundStyle(.white)
+            } else if let paused = lane.pausedRemaining {
+                Text(Duration.seconds(paused.rounded(.up)).formatted(.time(pattern: .minuteSecond)))
+                    .foregroundStyle(LaneColor.rest.opacity(0.6))
             } else {
                 Text(timerInterval: lane.startDate...lane.endDate, countsDown: true)
                     .foregroundStyle(LaneColor.rest)

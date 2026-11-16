@@ -204,10 +204,17 @@ private struct MiniLane: View {
                         .font(.title3.bold())
                         .foregroundStyle(.blue)
                 } else if let rest = lane.rest {
-                    Text(timerInterval: rest.startDate...rest.endDate, countsDown: true)
-                        .font(.title3.bold())
-                        .monospacedDigit()
-                        .foregroundStyle(LaneColor.rest)
+                    Group {
+                        if let paused = lane.pausedRestRemaining {
+                            Label(TimeFormatting.rest(Int(paused.rounded(.up))), systemImage: "pause.fill")
+                                .opacity(0.6)
+                        } else {
+                            Text(timerInterval: rest.startDate...rest.endDate, countsDown: true)
+                        }
+                    }
+                    .font(.title3.bold())
+                    .monospacedDigit()
+                    .foregroundStyle(LaneColor.rest)
                 } else {
                     TouchDownButton(title: "GO", color: .green, minHeight: 34, titleSize: 17) {
                         board.go(session, label: session.label(colorIndex: colorIndex, eventGroupNames: eventGroupNames))

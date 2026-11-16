@@ -78,11 +78,6 @@ struct ProfileView: View {
                 }
             }
             .navigationTitle("Profile")
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    RoleSwitchButton(to: .coach)
-                }
-            }
             .sheet(isPresented: $isAddingRecord) {
                 AddRecordView { record in
                     // Replace any existing record for the same event.

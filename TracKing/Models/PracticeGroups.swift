@@ -81,9 +81,18 @@ struct GroupSession: Identifiable {
     let groupIDs: [String]
     /// Set when this is a few athletes timed apart from their group for the day.
     let dayGroup: DayGroup?
+    /// Set when an athlete is timing themselves: the session covers only them.
+    let personalAthlete: Athlete?
 
-    /// Stable for the day, e.g. "shortSprint+shortHurdles", or "day.<id>" for a day group.
-    var id: String { dayGroup.map { "day.\($0.id)" } ?? groupIDs.joined(separator: "+") }
+    /// Stable for the day, e.g. "shortSprint+shortHurdles", "day.<id>" for a day group,
+    /// or "self.<athleteID>" for an athlete timing themselves.
+    var id: String {
+        if let personalAthlete { return "self.\(personalAthlete.athleteID)" }
+        return dayGroup.map { "day.\($0.id)" } ?? groupIDs.joined(separator: "+")
+    }
+
+    /// Whether this is one athlete timing themselves, rather than a coach timing a group.
+    var isPersonal: Bool { personalAthlete != nil }
     /// Athletes in these groups, excluding this device's own profile and anyone timed in a day group.
     let athletes: [Athlete]
 
@@ -91,6 +100,7 @@ struct GroupSession: Identifiable {
         self.workout = workout
         self.groupIDs = groupIDs
         self.dayGroup = nil
+        self.personalAthlete = nil
         let splitOff = Set(workout.dayGroups.flatMap(\.athleteIDs))
         self.athletes = allAthletes.filter {
             !$0.isDeviceUser && groupIDs.contains($0.eventGroupID) && !splitOff.contains($0.athleteID)
@@ -100,6 +110,7 @@ struct GroupSession: Identifiable {
     init(workout: Workout, dayGroup: DayGroup, allAthletes: [Athlete]) {
         self.workout = workout
         self.dayGroup = dayGroup
+        self.personalAthlete = nil
         let members = allAthletes.filter { dayGroup.athleteIDs.contains($0.athleteID) }
         self.athletes = members
         var ids: [String] = []
@@ -107,6 +118,16 @@ struct GroupSession: Identifiable {
             ids.append(athlete.eventGroupID)
         }
         self.groupIDs = ids
+    }
+
+    /// One athlete timing themselves, e.g. over the summer or on their own. They see and log
+    /// only their own sets.
+    init(workout: Workout, personalAthlete athlete: Athlete) {
+        self.workout = workout
+        self.dayGroup = nil
+        self.personalAthlete = athlete
+        self.groupIDs = [athlete.eventGroupID]
+        self.athletes = [athlete]
     }
 
     /// Every group (or combination) practicing in a session, earliest start first, then any
@@ -136,6 +157,9 @@ struct GroupSession: Identifiable {
 
     /// What the coach sees: the groups' own plans, plus notes and sets aimed at men, women, or one of the athletes.
     var profile: AthleteProfile {
+        if let personalAthlete {
+            return personalAthlete.profile
+        }
         let athleteGroupIDs = athletes.compactMap { athlete in
             athlete.profile.groupIDs.first { $0.hasPrefix("athlete.") }
         }
@@ -151,7 +175,7 @@ struct GroupSession: Identifiable {
     /// for any of them is run by all of them. Sets aimed at men, women, or one athlete stay with them.
     func athletes(for workoutSet: WorkoutSet) -> [Athlete] {
         // A day group can mix groups, so each athlete runs only what their own group runs.
-        if dayGroup != nil {
+        if dayGroup != nil || isPersonal {
             return athletes.filter { $0.profile.canSee(workoutSet.groupID) }
         }
         guard let setGroupID = workoutSet.groupID, !groupIDs.contains(setGroupID) else { return athletes }

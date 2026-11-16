@@ -51,6 +51,8 @@ struct LaneState {
     /// Seconds from the start to each finish so far.
     var splits: [TimeInterval] = []
     var rest: RestTimer?
+    /// Seconds left on the rest when the coach paused it. `nil` while it's counting down.
+    var pausedRestRemaining: TimeInterval?
     /// The rest just ran out: time to send this group.
     var isCalled = false
     /// Reps run but not yet matched to names, oldest first.
@@ -59,6 +61,7 @@ struct LaneState {
     var lastOrder: [String] = []
 
     var isRunning: Bool { startDate != nil }
+    var isRestPaused: Bool { pausedRestRemaining != nil }
 }
 
 /// How a card is labeled on the lock screen.
@@ -151,6 +154,7 @@ final class TrackBoardModel {
             lane.startDate = .now
             lane.splits = []
             lane.rest = nil
+            lane.pausedRestRemaining = nil
             lane.isCalled = false
         }
         alerts.requestPermissionIfNeeded()
@@ -196,7 +200,7 @@ final class TrackBoardModel {
         let next = position(after: rep, in: session)
         let soloRunner = runners.count == 1 ? runners.first : nil
         if let soloRunner, let time = lane.splits.first {
-            rep.set.logSeconds(time, rep: rep.repNumber, athleteID: soloRunner.athleteID, byCoach: true)
+            rep.set.logSeconds(time, rep: rep.repNumber, athleteID: soloRunner.athleteID, byCoach: !session.isPersonal)
         }
         update(session.id) { lane in
             if let soloRunner, !lane.splits.isEmpty {
@@ -246,7 +250,17 @@ final class TrackBoardModel {
 
     /// Adds time to a running rest.
     func addRest(_ seconds: Int, to session: GroupSession) {
-        guard let rest = lane(session.id).rest else { return }
+        let lane = self.lane(session.id)
+        guard let rest = lane.rest else { return }
+        if let paused = lane.pausedRestRemaining {
+            // Still paused: just add to what's left.
+            update(session.id) { lane in
+                lane.pausedRestRemaining = paused + TimeInterval(seconds)
+                lane.rest = RestTimer(rep: rest.rep, startDate: rest.startDate, endDate: rest.endDate.addingTimeInterval(TimeInterval(seconds)))
+            }
+            refreshLiveActivity()
+            return
+        }
         setRest(RestTimer(rep: rest.rep, startDate: rest.startDate, endDate: rest.endDate.addingTimeInterval(TimeInterval(seconds))), for: session.id)
     }
 
@@ -255,9 +269,38 @@ final class TrackBoardModel {
         cancelRest(session.id)
         update(session.id) { lane in
             lane.rest = nil
+            lane.pausedRestRemaining = nil
             lane.isCalled = true
         }
         refreshLiveActivity()
+    }
+
+    /// Stops the rest countdown where it is, e.g. while the coach talks to the group.
+    /// The end-of-rest alert is held until it's resumed.
+    func pauseRest(_ session: GroupSession) {
+        let lane = self.lane(session.id)
+        guard let rest = lane.rest, !lane.isRestPaused else { return }
+        cancelRest(session.id)
+        update(session.id) { $0.pausedRestRemaining = max(0, rest.endDate.timeIntervalSinceNow) }
+        refreshLiveActivity()
+    }
+
+    /// Picks the rest back up with the time that was left.
+    func resumeRest(_ session: GroupSession) {
+        let lane = self.lane(session.id)
+        guard let rest = lane.rest, let remaining = lane.pausedRestRemaining else { return }
+        let total = rest.endDate.timeIntervalSince(rest.startDate)
+        let now = Date.now
+        // Keep the same total so the progress bar picks up where it stopped.
+        setRest(RestTimer(rep: rest.rep, startDate: now.addingTimeInterval(remaining - total), endDate: now.addingTimeInterval(remaining)), for: session.id)
+    }
+
+    /// Starts the rest over from the full time, counting from now.
+    func resetRest(_ session: GroupSession) {
+        guard let rest = lane(session.id).rest else { return }
+        let total = rest.endDate.timeIntervalSince(rest.startDate)
+        let now = Date.now
+        setRest(RestTimer(rep: rest.rep, startDate: now, endDate: now.addingTimeInterval(total)), for: session.id)
     }
 
     /// Starts, replaces, or (with `nil`) stops a group's rest. Used by the plan's rest buttons too.
@@ -265,6 +308,7 @@ final class TrackBoardModel {
         cancelRest(id)
         update(id) { lane in
             lane.rest = timer
+            lane.pausedRestRemaining = nil
             lane.isCalled = false
         }
         if let timer {
@@ -340,8 +384,9 @@ final class TrackBoardModel {
                              isRunning: true, startDate: start, endDate: start)
             }
             if let rest = lane.rest {
-                return .init(id: id, name: label.title, detail: nextRepNames[id] ?? "Resting", colorIndex: label.colorIndex,
-                             isRunning: false, startDate: rest.startDate, endDate: rest.endDate)
+                return .init(id: id, name: label.title, detail: lane.isRestPaused ? "Rest paused" : nextRepNames[id] ?? "Resting",
+                             colorIndex: label.colorIndex, isRunning: false, startDate: rest.startDate, endDate: rest.endDate,
+                             pausedRemaining: lane.pausedRestRemaining)
             }
             return nil
         }

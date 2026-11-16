@@ -125,7 +125,7 @@ struct LaneCard: View {
                 Text(lane.isCalled ? "On the line" : "Ready")
                     .font(.title2.bold())
                     .foregroundStyle(lane.isCalled ? AnyShapeStyle(LaneColor.call) : AnyShapeStyle(.primary))
-                Text(runners == 1 ? "1 athlete" : "\(runners) athletes")
+                Text(session.isPersonal ? "Just you" : runners == 1 ? "1 athlete" : "\(runners) athletes")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 if rep.restSeconds > 0 {
@@ -236,7 +236,10 @@ private struct LaneHeader: View {
 
     private var menu: some View {
         Menu {
-            Button("Focus", systemImage: "arrow.up.left.and.arrow.down.right", action: onFocus)
+            // Focus switches between the coach's groups, so it doesn't apply to someone timing themselves.
+            if !session.isPersonal {
+                Button("Focus", systemImage: "arrow.up.left.and.arrow.down.right", action: onFocus)
+            }
             let sequence = session.repSequence
             if !sequence.isEmpty && !lane.isRunning {
                 Menu("Go to Rep", systemImage: "list.number") {
@@ -257,7 +260,7 @@ private struct LaneHeader: View {
                 Button("Return to Group", systemImage: "arrow.uturn.backward") {
                     session.workout.returnToGroups(dayGroup.id)
                 }
-            } else if session.athletes.count > 1 {
+            } else if !session.isPersonal && session.athletes.count > 1 {
                 Button("Time Athletes Separately", systemImage: "person.badge.clock", action: onSplitOff)
             }
             if session.dayGroup == nil && session.groupIDs.count > 1 {
@@ -312,7 +315,7 @@ private struct StatusPill: View {
             text = "Running"
             color = Color.blue
         } else if lane.rest != nil {
-            text = "Rest"
+            text = lane.isRestPaused ? "Paused" : "Rest"
             color = LaneColor.rest
         } else if lane.isCalled {
             text = "Go"
@@ -331,7 +334,8 @@ private struct StatusPill: View {
     }
 }
 
-/// The rest countdown with +30s and Skip. Turns gold in the last 10 seconds.
+/// The rest countdown with +30s and Skip, and small Pause and Reset buttons.
+/// Turns gold in the last 10 seconds.
 struct RestBody: View {
     let session: GroupSession
     let rest: RestTimer
@@ -340,20 +344,34 @@ struct RestBody: View {
     @Environment(TrackBoardModel.self) private var board
 
     var body: some View {
+        let paused = board.lane(session.id).pausedRestRemaining
+
         TimelineView(.periodic(from: .now, by: 0.5)) { context in
             let total = rest.endDate.timeIntervalSince(rest.startDate)
-            let left = max(0, rest.endDate.timeIntervalSince(context.date))
-            let isEnding = left <= 10
+            let left = paused ?? max(0, rest.endDate.timeIntervalSince(context.date))
+            let isEnding = paused == nil && left <= 10
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .center, spacing: 12) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(timerInterval: rest.startDate...rest.endDate, countsDown: true)
-                            .font(.system(size: large ? 72 : 44, weight: .bold, design: .rounded))
-                            .monospacedDigit()
-                            .foregroundStyle(isEnding ? LaneColor.call : LaneColor.rest)
-                        Text("Rest of \(TimeFormatting.rest(Int(total.rounded()))) · from last finisher")
+                        Group {
+                            if let paused {
+                                // Held still while paused.
+                                Text(TimeFormatting.rest(Int(paused.rounded(.up))))
+                                    .opacity(0.6)
+                            } else {
+                                Text(timerInterval: rest.startDate...rest.endDate, countsDown: true)
+                            }
+                        }
+                        .font(.system(size: large ? 72 : 44, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(isEnding ? LaneColor.call : LaneColor.rest)
+
+                        Text(paused == nil ? "Rest of \(TimeFormatting.rest(Int(total.rounded()))) · from last finisher" : "Rest paused")
                             .font(.caption)
                             .foregroundStyle(.secondary)
+
+                        RestControls(session: session, isPaused: paused != nil)
+                            .padding(.top, 4)
                     }
                     Spacer(minLength: 0)
                     VStack(spacing: 8) {
@@ -367,6 +385,35 @@ struct RestBody: View {
                     .tint(isEnding ? LaneColor.call : LaneColor.rest)
             }
         }
+    }
+}
+
+/// Small Pause/Resume and Reset buttons for a running rest.
+private struct RestControls: View {
+    let session: GroupSession
+    let isPaused: Bool
+
+    @Environment(TrackBoardModel.self) private var board
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Button {
+                if isPaused {
+                    board.resumeRest(session)
+                } else {
+                    board.pauseRest(session)
+                }
+            } label: {
+                Label(isPaused ? "Resume Rest" : "Pause Rest", systemImage: isPaused ? "play.fill" : "pause.fill")
+            }
+            Button("Reset Rest", systemImage: "arrow.counterclockwise") {
+                board.resetRest(session)
+            }
+        }
+        .labelStyle(.iconOnly)
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .tint(LaneColor.rest)
     }
 }
 

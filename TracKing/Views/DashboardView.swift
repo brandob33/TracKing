@@ -38,7 +38,7 @@ struct DashboardView: View {
                 .padding()
             }
             .background(Color.screenBackground)
-            .navigationTitle("Dashboard")
+            .navigationTitle("My Training")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button("Today") {
@@ -48,7 +48,7 @@ struct DashboardView: View {
                 }
             }
             .navigationDestination(for: Workout.self) { workout in
-                WorkoutDetailView(workout: workout)
+                AthleteWorkoutView(workout: workout)
             }
         }
     }

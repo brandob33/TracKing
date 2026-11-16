@@ -75,9 +75,6 @@ struct CoachWorkoutView: View {
                     }
                     .disabled(workout == nil)
                 }
-                ToolbarItem(placement: .primaryAction) {
-                    RoleSwitchButton(to: .athlete)
-                }
             }
             .sheet(isPresented: $isCombining) {
                 if let workout {
@@ -119,6 +116,9 @@ struct CoachWorkoutView: View {
 extension GroupSession {
     /// e.g. "Short Sprints + Short Hurdles", or a day group's name like "Brandon & Justin".
     func title(eventGroupNames: [String: String]) -> String {
+        if isPersonal {
+            return "Your Workout"
+        }
         if let dayGroup {
             return dayGroup.name
         }
