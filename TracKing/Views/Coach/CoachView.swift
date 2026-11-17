@@ -10,6 +10,7 @@ struct CoachView: View {
     @State private var isAddingGroup = false
     @State private var newGroupName = ""
     @State private var groupToDelete: EventGroup?
+    @AppStorage(AppRole.storageKey) private var roleName = ""
 
     var body: some View {
         NavigationStack {
@@ -47,8 +48,16 @@ struct CoachView: View {
                         }
                     }
                 }
+
+                Section {
+                    Button("Switch to Athlete View", systemImage: "figure.run") {
+                        roleName = AppRole.athlete.rawValue
+                    }
+                } footer: {
+                    Text("Shows an athlete's tabs: Today, History, and Profile.")
+                }
             }
-            .navigationTitle("Coach")
+            .navigationTitle("Team")
             .navigationDestination(for: EventGroup.self) { group in
                 EventGroupDetailView(group: group)
             }
@@ -139,7 +148,7 @@ struct AthleteAssignmentView: View {
                         Text(group.name).tag(group.groupID)
                     }
                 }
-                Picker("Group", selection: $athlete.genderGroupID) {
+                Picker("Men or Women", selection: $athlete.genderGroupID) {
                     ForEach(TrainingGroup.genderGroups) { group in
                         Text(group.name).tag(group.id)
                     }

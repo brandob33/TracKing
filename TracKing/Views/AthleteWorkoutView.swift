@@ -89,6 +89,13 @@ private struct SelfTimingView: View {
             .padding(.horizontal)
             .padding(.bottom, 24)
         }
+        .keepsScreenAwake()
+        .onAppear {
+            // An athlete timing themselves can use the volume buttons for GO and Finish.
+            board.timingScreenAppeared([session], eventGroupNames: [:])
+            board.setFocused(session.id)
+        }
+        .onDisappear { board.timingScreenDisappeared() }
         .sensoryFeedback(.success, trigger: board.restEndedCount)
         .sensoryFeedback(.impact(weight: .heavy), trigger: board.splitCount)
     }
@@ -99,10 +106,12 @@ private struct SelfTimingView: View {
 private struct YourReps: View {
     let session: GroupSession
 
+    @Query private var allResults: [RepResult]
     @Environment(TrackBoardModel.self) private var board
 
     var body: some View {
         let athleteID = session.personalAthlete?.athleteID ?? ""
+        let history = AthleteHistory(results: allResults, athleteID: athleteID)
         let current = board.currentRep(for: session)
         let isRunning = board.lane(session.id).isRunning
 
@@ -127,14 +136,15 @@ private struct YourReps: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(rep.set.repName)
                                     .fontWeight(.medium)
-                                if let target {
-                                    Text("Goal \(target.goalText)")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
+                                Text(repCaption(target: target, lastTime: history.lastTime(at: rep.set.distanceMeters, before: session.workout.date)))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
                             }
                             Spacer()
                             if let result {
+                                if history.isBest(result) {
+                                    BestBadge()
+                                }
                                 if let target {
                                     ComparisonIcon(comparison: target.compare(result.seconds))
                                 }
@@ -169,6 +179,28 @@ private struct YourReps: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    /// e.g. "Goal 16.0 · Last time 16.4"
+    private func repCaption(target: GroupTarget?, lastTime: Double?) -> String {
+        let parts = [
+            target.map { "Goal \($0.goalText)" },
+            lastTime.map { "Last time \(TimeFormatting.entry($0))" },
+        ].compactMap(\.self)
+        return parts.isEmpty ? "No goal set" : parts.joined(separator: " · ")
+    }
+}
+
+/// Marks a time as the athlete's fastest at that distance.
+struct BestBadge: View {
+    var body: some View {
+        Label("Best", systemImage: "star.fill")
+            .font(.caption2.weight(.bold))
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .foregroundStyle(Theme.navy)
+            .background(Theme.gold, in: .capsule)
+            .accessibilityLabel("Your fastest at this distance")
     }
 }
 

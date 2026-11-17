@@ -44,9 +44,9 @@ extension TrackBoardActivityAttributes: ActivityAttributes {}
 /// The color for each group's card, rest bar, and lock-screen row, by its place on the board.
 nonisolated enum LaneColor {
     static let colors: [Color] = [
-        Color(red: 0.72, green: 0.23, blue: 0.15),  // track red
-        Color(red: 0.18, green: 0.49, blue: 0.31),  // infield green
-        Color(red: 0.18, green: 0.39, blue: 0.72),  // blue
+        Color(hex: 0x0064A4),  // UCI blue
+        Color(hex: 0xB83A25),  // track red
+        Color(hex: 0x2E7D4F),  // infield green
         Color(red: 0.55, green: 0.32, blue: 0.70),  // purple
         Color(red: 0.05, green: 0.55, blue: 0.60),  // teal
         Color(red: 0.62, green: 0.42, blue: 0.20),  // bronze
@@ -57,6 +57,6 @@ nonisolated enum LaneColor {
     }
 
     /// Rest is over: send this group.
-    static let call = Color(red: 0.96, green: 0.71, blue: 0.0)
-    static let rest = Color(red: 0.85, green: 0.45, blue: 0.10)
+    static let call = Theme.call
+    static let rest = Theme.rest
 }

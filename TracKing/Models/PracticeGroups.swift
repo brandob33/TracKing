@@ -95,6 +95,9 @@ struct GroupSession: Identifiable {
     var isPersonal: Bool { personalAthlete != nil }
     /// Athletes in these groups, excluding this device's own profile and anyone timed in a day group.
     let athletes: [Athlete]
+    /// Which lane color and number this group gets. It follows the group's place in the coach's
+    /// Team list, not its place on the board, so a group keeps its color every day.
+    var colorIndex = 0
 
     init(workout: Workout, groupIDs: [String], allAthletes: [Athlete]) {
         self.workout = workout
@@ -151,7 +154,17 @@ struct GroupSession: Identifiable {
                 }
             }
             .map(\.element)
-        let day = workout.dayGroups.map { GroupSession(workout: workout, dayGroup: $0, allAthletes: athletes) }
+            .map { session -> GroupSession in
+                var session = session
+                session.colorIndex = groups.firstIndex { $0.groupID == session.groupIDs.first } ?? 0
+                return session
+            }
+        // Day groups take the colors after the last event group's.
+        let day = workout.dayGroups.enumerated().map { index, dayGroup -> GroupSession in
+            var session = GroupSession(workout: workout, dayGroup: dayGroup, allAthletes: athletes)
+            session.colorIndex = groups.count + index
+            return session
+        }
         return regular + day.filter { !$0.athletes.isEmpty }
     }
 

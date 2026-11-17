@@ -21,3 +21,7 @@ The app icon lives in `TracKing/Assets.xcassets/AppIcon.appiconset` (a single 10
 ## Explorations
 
 `explorations/` holds other directions that are not in use yet: Crown Band, Stadium View, Monoline, Crest, Crowned Hurdle and Lane Crown.
+
+## App colors
+
+The app's colors live in one file, `Shared/Theme.swift`, and are currently a UC Irvine theme (UCI blue `#0064A4`, UCI gold `#FFD200`, UCI dark blue `#1B3D6D`). Change the values there to re-theme the whole app and the lock-screen rest timer. GO stays green and rest stays orange on purpose, so the timing states are easy to tell apart at a glance.

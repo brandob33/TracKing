@@ -16,7 +16,7 @@ Out of scope for now: Firestore sync, importing workouts, editing workouts.
 - Top of the screen: the day's session, with arrows to move between days.
 - A **Timing / Plan** switch:
   - **Timing** opens the Track Board.
-  - **Plan** shows one group's full plan (warm-up, drills, notes, every set) with a group picker. Tapping a rep still opens the old stopwatch, which is now where you review, fix, or retime a rep's times.
+  - **Plan** shows one group's full plan (warm-up, drills, notes, every set) with a group picker and an **Edit Plan** button. Tapping a rep shows its times, to fix one or send the rep back to the Track Board with **Time This Rep Again**.
 
 ### Track Board
 - One card per group practicing that day. Each card has its own clock, so several groups can run at once.
@@ -28,7 +28,7 @@ Out of scope for now: Firestore sync, importing workouts, editing workouts.
   - **Done**: "All reps timed".
 - Taps record on touch-down, not release, so finish times are as accurate as possible.
 - The card menu has: Focus, Go to Rep (jump to any rep, for example to retime one), Time Athletes Separately, Return to Group, Separate Groups (for combined groups), and Cancel Rep.
-- Every group has a lane number and color that are also used on the lock screen.
+- Every group has a lane number and color that are also used on the lock screen. They follow the group's place in the Team list, so a group keeps the same color every day.
 
 ### Focus mode
 - Opened from a card's menu. One group fills the screen with a large Finish pad.
@@ -40,7 +40,7 @@ Out of scope for now: Firestore sync, importing workouts, editing workouts.
 - In the naming sheet, tap names in the order they finished. Each name goes on the fastest time that doesn't have a name yet. Tap a name that's already on a time to take it back off. There's no swapping.
 - **Same Order as Last Rep** fills in every name with one tap, when the order didn't change.
 - **Later** keeps the times waiting. **Discard Times** throws them away (for false starts).
-- When only one athlete runs a rep (for example, someone timed separately), there's nothing to name: Finish saves their time right away. In the Plan stopwatch, their name is already on the time, so the coach just taps Save.
+- When only one athlete runs a rep (for example, someone timed separately), there's nothing to name: Finish saves their time right away.
 
 ### Time athletes separately (day groups)
 - From a card's menu, choose **Time Athletes Separately**, then pick athletes, for example Brandon and Justin practicing at a different time.
@@ -54,11 +54,22 @@ Out of scope for now: Firestore sync, importing workouts, editing workouts.
 - A notification goes off when each rest ends ("Long Sprints: on the line"), even with the phone locked. The app asks for notification permission the first time GO is tapped.
 - This adds a new widget extension target (`TracKingWidgets`) and a `Shared` folder that both the app and the extension compile.
 
+### Added after the app review (November 2026)
+- **Tabs by role.** The opening screen asks if you're coaching or an athlete. Coaches get Workout, Results, and Team. Athletes get Today, History, and Profile. Switch from the Team tab or the Profile tab.
+- **Results tab.** Athletes by reps for each group, colored against each athlete's goal (blue faster, green on goal, orange slower). Tap a time to fix it. Share sends the session as text.
+- **Week strip.** The Workout and Results tabs show a week of days with a dot on session days. The ••• button opens a month calendar.
+- **Goals on the board.** Each card shows the rep's goal. Finish times are colored against it when everyone running shares one goal.
+- **Screen stays awake** on the Track Board and on an athlete's timing screen.
+- **Rest beeps.** One beep with 10 seconds left and three when rest is over, even with the ringer off. Turn off in the gear menu on the Workout tab.
+- **Volume buttons.** Either volume button works the big button for the group in Focus (Finish, or GO when they're ready). On the board it's Finish when exactly one group is running. iOS has no official way to read these buttons, so the app watches the volume level and puts it back. Turn off in the gear menu.
+- **Timing survives the app closing.** Running clocks, rests, and times waiting for names are saved as they change and come back at launch.
+- **Rest buttons.** Pause, +30s, and Skip are full size. Restart Rest is in the card's ••• menu so it can't be hit by accident.
+- **One timer.** The old full-screen stopwatch is gone. The Track Board card is the only timer, and tap-in-finish-order is the only naming screen.
+- **Colors** live in `Shared/Theme.swift` (UCI blue and gold).
+
 ---
 
 ## Known limits right now
-- Live timing state (running clocks, rests, and times that haven't been named yet) is kept in memory. If the app is force-quit mid-practice, those are lost. Saved times are kept.
-- Lane colors follow the order of groups on the board, so a color can shift when a day group is added.
 - The project file was edited by hand to add the widget extension. If Xcode has trouble opening it, see "If the widget target won't build" below.
 
 ## If the widget target won't build

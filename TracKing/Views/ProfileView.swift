@@ -7,6 +7,7 @@ struct ProfileView: View {
 
     @Query private var results: [RepResult]
     @Environment(\.eventGroupNames) private var eventGroupNames
+    @AppStorage(AppRole.storageKey) private var roleName = ""
     @State private var isAddingRecord = false
 
     /// Records in event order, so the list reads 60m, 100m, 200m, and so on.
@@ -38,7 +39,7 @@ struct ProfileView: View {
                 }
 
                 Section {
-                    LabeledContent("Group", value: TrainingGroup.name(for: athlete.genderGroupID))
+                    LabeledContent("Men or Women", value: TrainingGroup.name(for: athlete.genderGroupID))
                     LabeledContent("Event Group", value: TrainingGroup.name(for: athlete.eventGroupID, eventGroupNames: eventGroupNames))
                 } header: {
                     Text("Training Group")
@@ -72,9 +73,44 @@ struct ProfileView: View {
                     }
                 }
 
+                Section {
+                    let bests = AthleteHistory(results: results, athleteID: athlete.athleteID).bests
+                    if bests.isEmpty {
+                        Text("Your fastest rep at each distance will show up here as you log times.")
+                            .foregroundStyle(.secondary)
+                    }
+                    ForEach(bests, id: \.distance) { best in
+                        HStack {
+                            Text("\(best.distance)m")
+                                .fontWeight(.medium)
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 2) {
+                                Text(TimeFormatting.raceTime(best.entry.seconds, fractionDigits: 2))
+                                    .monospacedDigit()
+                                Text(best.entry.day, format: .dateTime.month(.abbreviated).day().year())
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .accessibilityElement(children: .combine)
+                    }
+                } header: {
+                    Text("Training Bests")
+                } footer: {
+                    Text("Found from the times logged in your workouts. Meet records go under Personal Records.")
+                }
+
                 Section("Activity") {
                     LabeledContent("Sessions Logged", value: loggedSessionCount, format: .number)
                     LabeledContent("Reps Logged", value: myResults.count, format: .number)
+                }
+
+                Section {
+                    Button("Switch to Coach View", systemImage: "stopwatch") {
+                        roleName = AppRole.coach.rawValue
+                    }
+                } footer: {
+                    Text("Shows the coach's tabs: Workout, Results, and Team.")
                 }
             }
             .navigationTitle("Profile")
