@@ -28,7 +28,7 @@ Out of scope for now: Firestore sync, importing workouts, editing workouts.
   - **Done**: "All reps timed".
 - Taps record on touch-down, not release, so finish times are as accurate as possible.
 - The card menu has: Focus, Go to Rep (jump to any rep, for example to retime one), Time Athletes Separately, Return to Group, Separate Groups (for combined groups), and Cancel Rep.
-- Every group has a lane number and color that are also used on the lock screen.
+- Every group has a lane number and color that are also used on the lock screen. They follow the group's place in the Team list, so a group keeps the same color every day.
 
 ### Focus mode
 - Opened from a card's menu. One group fills the screen with a large Finish pad.

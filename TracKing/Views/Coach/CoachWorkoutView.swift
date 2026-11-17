@@ -102,7 +102,7 @@ struct CoachWorkoutView: View {
 
                 CoachGroupSessionView(
                     session: session,
-                    restTimer: board.restBinding(for: session, label: session.label(colorIndex: index, eventGroupNames: eventGroupNames))
+                    restTimer: board.restBinding(for: session, label: session.label(colorIndex: session.colorIndex, eventGroupNames: eventGroupNames))
                 )
                 .id(session.id)
             }

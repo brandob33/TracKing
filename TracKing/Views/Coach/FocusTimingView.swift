@@ -32,7 +32,7 @@ struct FocusTimingView: View {
                         HStack(spacing: 8) {
                             ForEach(Array(sessions.enumerated()), id: \.element.id) { offset, session in
                                 if session.id != sessions[index].id {
-                                    MiniLane(session: session, colorIndex: offset) {
+                                    MiniLane(session: session, colorIndex: session.colorIndex) {
                                         withAnimation(.snappy) { selectedID = session.id }
                                     }
                                 }
@@ -44,7 +44,7 @@ struct FocusTimingView: View {
                 }
 
                 if sessions.indices.contains(index) {
-                    FocusLane(session: sessions[index], colorIndex: index) {
+                    FocusLane(session: sessions[index], colorIndex: sessions[index].colorIndex) {
                         naming = NamingTarget(sessionID: sessions[index].id, captured: $0)
                     }
                     .padding(.horizontal)
@@ -61,6 +61,15 @@ struct FocusTimingView: View {
                     Button("Board", systemImage: "rectangle.grid.1x2") { dismiss() }
                         .labelStyle(.titleAndIcon)
                 }
+                if sessions.indices.contains(index), board.lane(sessions[index].id).rest != nil {
+                    ToolbarItem(placement: .primaryAction) {
+                        Menu("More", systemImage: "ellipsis.circle") {
+                            Button("Restart Rest", systemImage: "arrow.counterclockwise") {
+                                board.resetRest(sessions[index])
+                            }
+                        }
+                    }
+                }
             }
             .sheet(item: $naming) { target in
                 NameTimesSheet(captured: target.captured, sessionID: target.sessionID)
@@ -68,8 +77,8 @@ struct FocusTimingView: View {
         }
         .sensoryFeedback(.success, trigger: board.restEndedCount)
         .sensoryFeedback(.impact(weight: .heavy), trigger: board.splitCount)
+        // The Track Board underneath turns this back off when the coach leaves the Workout tab.
         .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
-        .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
     }
 }
 
@@ -100,6 +109,10 @@ private struct FocusLane: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            if let rep, let goal = session.goalText(for: rep.set) {
+                Text(goal)
+                    .font(.title3.weight(.semibold))
+            }
 
             if rep == nil {
                 Spacer()
@@ -113,7 +126,7 @@ private struct FocusLane: View {
                     .font(.system(size: 76, weight: .bold, design: .rounded))
                     .foregroundStyle(Theme.blue)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                SplitList(splits: lane.splits)
+                SplitList(splits: lane.splits, goal: rep.map { session.sharedGoal(for: $0.set) } ?? nil)
                 HStack(spacing: 10) {
                     Button { board.undoSplit(session) } label: {
                         Label("Undo", systemImage: "arrow.uturn.backward").frame(maxWidth: .infinity, minHeight: 44)

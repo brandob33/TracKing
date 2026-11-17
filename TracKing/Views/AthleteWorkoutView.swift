@@ -89,6 +89,7 @@ private struct SelfTimingView: View {
             .padding(.horizontal)
             .padding(.bottom, 24)
         }
+        .keepsScreenAwake()
         .sensoryFeedback(.success, trigger: board.restEndedCount)
         .sensoryFeedback(.impact(weight: .heavy), trigger: board.splitCount)
     }

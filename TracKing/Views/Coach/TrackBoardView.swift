@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 /// The coach's timing screen: a card for every group practicing today, each with its own
 /// clock and one big button that always does the next thing (GO, Finish, then rest by itself).
@@ -25,7 +26,7 @@ struct TrackBoardView: View {
                 ForEach(Array(sessions.enumerated()), id: \.element.id) { index, session in
                     LaneCard(
                         session: session,
-                        colorIndex: index,
+                        colorIndex: session.colorIndex,
                         onFocus: { focusedID = FocusTarget(id: session.id) },
                         onName: { naming = NamingTarget(sessionID: session.id, captured: $0) },
                         onSplitOff: { splittingSession = session }
@@ -36,6 +37,7 @@ struct TrackBoardView: View {
             .padding(.bottom, 24)
         }
         .background(Color.screenBackground)
+        .keepsScreenAwake()
         .fullScreenCover(item: $focusedID) { target in
             FocusTimingView(workout: workout, initialID: target.id)
         }
@@ -128,6 +130,10 @@ struct LaneCard: View {
                 Text(session.isPersonal ? "Just you" : runners == 1 ? "1 athlete" : "\(runners) athletes")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                if let goal = session.goalText(for: rep.set) {
+                    Text(goal)
+                        .font(.subheadline.weight(.semibold))
+                }
                 if rep.restSeconds > 0 {
                     Button {
                         board.restWithoutTiming(session, label: label)
@@ -159,6 +165,10 @@ struct LaneCard: View {
                     Text("\(lane.splits.count) of \(runners) in")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.secondary)
+                    if let goal = session.goalText(for: rep.set) {
+                        Text(goal)
+                            .font(.subheadline.weight(.semibold))
+                    }
                 }
                 Spacer(minLength: 0)
                 TouchDownButton(title: "Finish", subtitle: ordinal(lane.splits.count + 1) + " across", color: Theme.finishFill, minHeight: 92) {
@@ -166,7 +176,7 @@ struct LaneCard: View {
                 }
                 .frame(width: 130)
             }
-            SplitList(splits: lane.splits)
+            SplitList(splits: lane.splits, goal: session.sharedGoal(for: rep.set))
             HStack(spacing: 8) {
                 Button("Undo", systemImage: "arrow.uturn.backward") { board.undoSplit(session) }
                     .disabled(lane.splits.isEmpty)
@@ -196,27 +206,42 @@ private struct LaneHeader: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            LaneBadge(colorIndex: colorIndex)
-            VStack(alignment: .leading, spacing: 1) {
-                HStack(spacing: 6) {
-                    Text(session.title(eventGroupNames: eventGroupNames))
-                        .font(.headline)
-                        .lineLimit(1)
-                    if session.dayGroup != nil {
-                        Text("Today only")
-                            .font(.caption2.weight(.bold))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(.tint.opacity(0.15), in: .capsule)
-                            .foregroundStyle(.tint)
+            // Tapping the group's name opens it full screen.
+            Button(action: onFocus) {
+                HStack(spacing: 10) {
+                    LaneBadge(colorIndex: colorIndex)
+                    VStack(alignment: .leading, spacing: 1) {
+                        HStack(spacing: 6) {
+                            Text(session.title(eventGroupNames: eventGroupNames))
+                                .font(.headline)
+                                .lineLimit(1)
+                            if session.dayGroup != nil {
+                                Text("Today only")
+                                    .font(.caption2.weight(.bold))
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(.tint.opacity(0.15), in: .capsule)
+                                    .foregroundStyle(.tint)
+                            }
+                            if !session.isPersonal {
+                                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                    .font(.caption2.weight(.bold))
+                                    .foregroundStyle(.tertiary)
+                                    .accessibilityHidden(true)
+                            }
+                        }
+                        Text(subtitle)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
                     }
+                    Spacer(minLength: 4)
                 }
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                .contentShape(.rect)
             }
-            Spacer(minLength: 4)
+            .buttonStyle(.plain)
+            .disabled(session.isPersonal)
+            .accessibilityHint("Opens this group full screen")
             StatusPill(lane: lane, isDone: rep == nil)
             menu
         }
@@ -266,6 +291,12 @@ private struct LaneHeader: View {
             if session.dayGroup == nil && session.groupIDs.count > 1 {
                 Button("Separate Groups", systemImage: "rectangle.split.2x1") {
                     session.workout.separate(session.groupIDs)
+                }
+            }
+            if lane.rest != nil {
+                Divider()
+                Button("Restart Rest", systemImage: "arrow.counterclockwise") {
+                    board.resetRest(session)
                 }
             }
             if lane.isRunning {
@@ -369,26 +400,19 @@ struct RestBody: View {
                         Text(paused == nil ? "Rest of \(TimeFormatting.rest(Int(total.rounded()))) · from last finisher" : "Rest paused")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-
-                        RestControls(session: session, isPaused: paused != nil)
-                            .padding(.top, 4)
                     }
                     Spacer(minLength: 0)
-                    VStack(spacing: 8) {
-                        Button("+30s") { board.addRest(30, to: session) }
-                        Button("Skip") { board.skipRest(session) }
-                    }
-                    .buttonStyle(.bordered)
-                    .font(.subheadline.weight(.semibold))
                 }
                 ProgressView(value: total > 0 ? min(1, 1 - left / total) : 1)
                     .tint(isEnding ? LaneColor.call : LaneColor.rest)
+                RestControls(session: session, isPaused: paused != nil)
             }
         }
     }
 }
 
-/// Small Pause/Resume and Reset buttons for a running rest.
+/// Pause/Resume, +30s, and Skip for a running rest, each a full-size button. Restarting the
+/// rest lives in the card's menu, away from these, so it can't be hit by accident.
 private struct RestControls: View {
     let session: GroupSession
     let isPaused: Bool
@@ -404,16 +428,23 @@ private struct RestControls: View {
                     board.pauseRest(session)
                 }
             } label: {
-                Label(isPaused ? "Resume Rest" : "Pause Rest", systemImage: isPaused ? "play.fill" : "pause.fill")
+                Label(isPaused ? "Resume" : "Pause", systemImage: isPaused ? "play.fill" : "pause.fill")
+                    .frame(maxWidth: .infinity, minHeight: 32)
             }
-            Button("Reset Rest", systemImage: "arrow.counterclockwise") {
-                board.resetRest(session)
+            .tint(LaneColor.rest)
+            Button {
+                board.addRest(30, to: session)
+            } label: {
+                Text("+30s").frame(maxWidth: .infinity, minHeight: 32)
+            }
+            Button {
+                board.skipRest(session)
+            } label: {
+                Text("Skip").frame(maxWidth: .infinity, minHeight: 32)
             }
         }
-        .labelStyle(.iconOnly)
         .buttonStyle(.bordered)
-        .controlSize(.small)
-        .tint(LaneColor.rest)
+        .font(.subheadline.weight(.semibold))
     }
 }
 
@@ -430,16 +461,95 @@ struct RunningClock: View {
     }
 }
 
-/// Finish times so far, fastest first.
+/// Finish times so far, fastest first. When everyone running shares one goal, each time is
+/// colored against it: blue is faster, green is on target, orange is slower.
 struct SplitList: View {
     let splits: [TimeInterval]
+    var goal: GroupTarget?
 
     var body: some View {
-        Text(splits.isEmpty ? "Tap Finish as each athlete crosses" : splits.map(TimeFormatting.stopwatch).joined(separator: "  ·  "))
-            .font(.subheadline.weight(splits.isEmpty ? .regular : .semibold))
-            .monospacedDigit()
-            .foregroundStyle(splits.isEmpty ? .secondary : .primary)
-            .lineLimit(2)
+        if splits.isEmpty {
+            Text("Tap Finish as each athlete crosses")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        } else {
+            ScrollView(.horizontal) {
+                HStack(spacing: 6) {
+                    ForEach(Array(splits.enumerated()), id: \.offset) { _, seconds in
+                        let color = goal.map { $0.compare(seconds).color } ?? Color.primary
+                        Text(TimeFormatting.stopwatch(seconds))
+                            .font(.subheadline.weight(.bold))
+                            .monospacedDigit()
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .foregroundStyle(color)
+                            .background(color.opacity(0.14), in: .capsule)
+                    }
+                }
+            }
+            .scrollIndicators(.hidden)
+            .defaultScrollAnchor(.trailing)
+        }
+    }
+}
+
+extension GoalComparison {
+    /// Blue is faster than the goal, green is on it, orange is slower.
+    var color: Color {
+        switch self {
+        case .faster: Theme.blue
+        case .onTarget: Theme.go
+        case .slower: Theme.rest
+        }
+    }
+}
+
+extension GroupSession {
+    /// The goal for each athlete running a set, without repeats, e.g. the men's and the women's.
+    func goals(for workoutSet: WorkoutSet) -> [GroupTarget] {
+        var result: [GroupTarget] = []
+        for athlete in athletes(for: workoutSet) {
+            if let target = athlete.profile.bestMatch(in: workoutSet.targets, groupID: \.groupID), !result.contains(target) {
+                result.append(target)
+            }
+        }
+        return result
+    }
+
+    /// The goal when everyone running the set has the same one. Finish taps aren't matched
+    /// to names yet, so times can only be colored when there's a single goal to compare to.
+    func sharedGoal(for workoutSet: WorkoutSet) -> GroupTarget? {
+        let all = goals(for: workoutSet)
+        return all.count == 1 ? all[0] : nil
+    }
+
+    /// "Goal 16.0", or "Goal M 16.0 · W 18.5" when the runners have different goals.
+    func goalText(for workoutSet: WorkoutSet) -> String? {
+        let all = goals(for: workoutSet)
+        guard !all.isEmpty else { return nil }
+        if all.count == 1 {
+            return "Goal \(all[0].goalText)"
+        }
+        let parts = all.map { target -> String in
+            let who: String
+            switch target.groupID {
+            case TrainingGroup.men.id: who = "M "
+            case TrainingGroup.women.id: who = "W "
+            case let id?: who = TrainingGroup.name(for: id) + " "
+            case nil: who = ""
+            }
+            return who + target.goalText
+        }
+        return "Goal " + parts.joined(separator: " · ")
+    }
+}
+
+extension View {
+    /// Keeps the phone from locking while this screen is showing, so a finish is never
+    /// missed because the screen went to sleep.
+    func keepsScreenAwake() -> some View {
+        onAppear { UIApplication.shared.isIdleTimerDisabled = true }
+            .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
     }
 }
 
