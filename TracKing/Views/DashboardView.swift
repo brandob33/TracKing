@@ -1,10 +1,13 @@
 import SwiftUI
 import SwiftData
 
-/// Home screen: the selected day's workout (today by default), that week's plan info, and a calendar for picking a day.
+/// The athlete's home: the picked day's workout first (today by default) with a Start button,
+/// a week of days to move between, and that week's plan info. The ••• on the week strip
+/// opens a full month calendar.
 struct DashboardView: View {
     @Query(sort: \Workout.date) private var workouts: [Workout]
     @Query(sort: \TrainingWeek.startDate) private var weeks: [TrainingWeek]
+    @Environment(\.athleteProfile) private var profile
     @State private var selectedDate: Date = Calendar.current.startOfDay(for: .now)
 
     private let calendar = Calendar.current
@@ -21,30 +24,38 @@ struct DashboardView: View {
         weeks.first { $0.contains(selectedDate) }
     }
 
+    private var isToday: Bool {
+        calendar.isDateInToday(selectedDate)
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 16) {
+                    greeting
+
+                    WeekStrip(selectedDate: $selectedDate, workoutDays: workoutDays)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 6)
+                        .background(Color.cardBackground, in: .rect(cornerRadius: 20))
+
                     selectedDaySection
 
                     if let selectedWeek {
                         WeekCard(week: selectedWeek)
                     }
-
-                    MonthCalendarView(selectedDate: $selectedDate, workoutDays: workoutDays)
-                        .padding()
-                        .background(Color.cardBackground, in: .rect(cornerRadius: 20))
                 }
                 .padding()
             }
             .background(Color.screenBackground)
-            .navigationTitle("My Training")
+            .navigationTitle(isToday ? "Today" : selectedDate.formatted(.dateTime.weekday(.wide)))
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button("Today") {
                         selectedDate = calendar.startOfDay(for: .now)
                     }
-                    .disabled(calendar.isDateInToday(selectedDate))
+                    .disabled(isToday)
                 }
             }
             .navigationDestination(for: Workout.self) { workout in
@@ -53,18 +64,27 @@ struct DashboardView: View {
         }
     }
 
-    @ViewBuilder
-    private var selectedDaySection: some View {
-        Group {
-            if calendar.isDateInToday(selectedDate) {
-                Text("Today's Workout")
-            } else {
+    private var greeting: some View {
+        HStack(spacing: 12) {
+            LogoMark(size: 40)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(firstName.isEmpty ? "Your Training" : "Hi, \(firstName)")
+                    .font(.title2.bold())
                 Text(selectedDate, format: .dateTime.weekday(.wide).month(.wide).day())
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
         }
-        .font(.headline)
+        .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)
+    }
 
+    private var firstName: String {
+        profile.name.split(separator: " ").first.map(String.init) ?? ""
+    }
+
+    @ViewBuilder
+    private var selectedDaySection: some View {
         if selectedDayWorkouts.isEmpty {
             ContentUnavailableView(
                 "Rest Day",
@@ -85,13 +105,19 @@ struct DashboardView: View {
     }
 }
 
-/// Summary of a session shown on the dashboard: its start time and numbered units.
+/// A session on the athlete's home: its start time, numbered units, how much is logged, and
+/// a Start button. The whole card opens the workout.
 struct WorkoutCard: View {
     let workout: Workout
 
     @Environment(\.athleteProfile) private var profile
 
     var body: some View {
+        let totalReps = workout.visibleSets(for: profile).reduce(0) { $0 + $1.totalReps }
+        let loggedReps = workout.loggedRepCount(for: profile)
+        let isDone = totalReps > 0 && loggedReps >= totalReps
+        let action = totalReps == 0 ? "Open" : isDone ? "Review" : loggedReps == 0 ? "Start" : "Continue"
+
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Session \(workout.sessionNumber)")
@@ -100,6 +126,9 @@ struct WorkoutCard: View {
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
                     .background(.tint.opacity(0.15), in: .capsule)
+                if let focus = workout.week?.focus, !focus.isEmpty {
+                    FocusBadge(text: focus)
+                }
                 Spacer()
                 if let startTime = workout.startTime(for: profile) {
                     Label {
@@ -110,13 +139,10 @@ struct WorkoutCard: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
                 }
-                Image(systemName: "chevron.right")
-                    .foregroundStyle(.tertiary)
-                    .accessibilityHidden(true)
             }
 
             Text(workout.title)
-                .font(.title3.bold())
+                .font(.title2.bold())
 
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(workout.orderedUnits) { unit in
@@ -138,6 +164,26 @@ struct WorkoutCard: View {
                 }
             }
             .font(.subheadline)
+
+            if totalReps > 0 {
+                ProgressView(value: Double(min(loggedReps, totalReps)), total: Double(totalReps))
+                    .tint(isDone ? Theme.go : Theme.blue)
+            }
+
+            HStack {
+                if totalReps > 0 {
+                    Text(isDone ? "All \(totalReps) reps logged" : "\(loggedReps) of \(totalReps) reps logged")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Label(action, systemImage: isDone ? "checkmark" : "play.fill")
+                .font(.headline)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 10)
+                .background(isDone ? Theme.finishFill : Theme.goFill, in: .capsule)
+            }
         }
         .padding()
         .background(Color.cardBackground, in: .rect(cornerRadius: 20))

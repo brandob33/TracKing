@@ -62,7 +62,7 @@ struct PastWorkoutsView: View {
                     )
                 }
             }
-            .navigationTitle("Past Workouts")
+            .navigationTitle("History")
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Picker("Show", selection: $filter) {
@@ -136,10 +136,12 @@ private struct PastWorkoutRow: View {
 struct PastWorkoutDetailView: View {
     let workout: Workout
 
+    @Query private var allResults: [RepResult]
     @Environment(\.athleteProfile) private var profile
 
     var body: some View {
         let sets = workout.visibleSets(for: profile)
+        let history = AthleteHistory(results: allResults, athleteID: profile.athleteID)
 
         List {
             Section {
@@ -163,7 +165,7 @@ struct PastWorkoutDetailView: View {
             ForEach(sets) { workoutSet in
                 Section {
                     ForEach(1...workoutSet.totalReps, id: \.self) { repNumber in
-                        RepResultRow(workoutSet: workoutSet, repNumber: repNumber)
+                        RepResultRow(workoutSet: workoutSet, repNumber: repNumber, history: history)
                     }
                 } header: {
                     Text(workoutSet.summary)
@@ -237,6 +239,7 @@ private struct StatTile: View {
 private struct RepResultRow: View {
     let workoutSet: WorkoutSet
     let repNumber: Int
+    let history: AthleteHistory
 
     @Environment(\.athleteProfile) private var profile
 
@@ -255,6 +258,9 @@ private struct RepResultRow: View {
                 }
             }
             Spacer()
+            if let result, history.isBest(result) {
+                BestBadge()
+            }
             VStack(alignment: .trailing, spacing: 2) {
                 if let result {
                     Text(TimeFormatting.raceTime(result.seconds, fractionDigits: 2))
