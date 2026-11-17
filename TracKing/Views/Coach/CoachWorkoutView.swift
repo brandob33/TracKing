@@ -14,6 +14,9 @@ struct CoachWorkoutView: View {
     @State private var mode = Mode.timing
     @State private var planSessionID: String?
     @State private var isCombining = false
+    @State private var editing: EditPlanRoute?
+    @AppStorage(TimingSettings.restSoundsKey) private var restSounds = true
+    @AppStorage(TimingSettings.volumeButtonsKey) private var volumeButtons = true
 
     enum Mode: String, CaseIterable {
         case timing = "Timing"
@@ -30,12 +33,16 @@ struct CoachWorkoutView: View {
         workouts.first { calendar.isDate($0.date, inSameDayAs: date) }
     }
 
+    private var workoutDays: Set<Date> {
+        Set(workouts.map { calendar.startOfDay(for: $0.date) })
+    }
+
     var body: some View {
         let sessions = workout.map { GroupSession.all(in: $0, groups: groups, athletes: athletes) } ?? []
 
         NavigationStack {
             VStack(spacing: 0) {
-                DayHeader(date: $date, workout: workout)
+                DayHeader(date: $date, workout: workout, workoutDays: workoutDays)
                     .padding(.horizontal)
                     .padding(.bottom, 8)
 
@@ -68,7 +75,16 @@ struct CoachWorkoutView: View {
             .navigationDestination(for: SeriesRoute.self) { route in
                 SeriesDetailView(name: route.name)
             }
+            .navigationDestination(item: $editing) { route in
+                GroupWorkoutEditor(group: route.group, workout: route.workout)
+            }
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Menu("Timing Options", systemImage: "gearshape") {
+                        Toggle("Rest Beeps", systemImage: "speaker.wave.2", isOn: $restSounds)
+                        Toggle("Volume Buttons Tap Finish", systemImage: "hand.tap", isOn: $volumeButtons)
+                    }
+                }
                 ToolbarItem(placement: .primaryAction) {
                     Button("Combine Groups", systemImage: "rectangle.stack.badge.plus") {
                         isCombining = true
@@ -84,6 +100,27 @@ struct CoachWorkoutView: View {
         }
         .onAppear { board.workoutTitle = workout?.title ?? "" }
         .onChange(of: date) { board.workoutTitle = workout?.title ?? "" }
+        .onChange(of: volumeButtons) { board.volumeButtonSettingChanged() }
+    }
+
+    /// Opens the plan editor for the group on screen. Combined groups each have their own
+    /// plan, so the coach picks which one to edit.
+    @ViewBuilder
+    private func editPlanButton(for session: GroupSession) -> some View {
+        let editable = groups.filter { session.groupIDs.contains($0.groupID) }
+        if editable.count == 1 {
+            Button("Edit Plan", systemImage: "pencil") {
+                editing = EditPlanRoute(group: editable[0], workout: session.workout)
+            }
+        } else if editable.count > 1 {
+            Menu("Edit Plan", systemImage: "pencil") {
+                ForEach(editable) { group in
+                    Button(group.name) {
+                        editing = EditPlanRoute(group: group, workout: session.workout)
+                    }
+                }
+            }
+        }
     }
 
     /// The full plan for one group, picked from a menu, so warm-ups and notes are a tap away.
@@ -93,17 +130,26 @@ struct CoachWorkoutView: View {
         if sessions.indices.contains(index) {
             let session = sessions[index]
             VStack(spacing: 0) {
-                Picker("Group", selection: Binding(get: { session.id }, set: { planSessionID = $0 })) {
-                    ForEach(sessions) { Text($0.title(eventGroupNames: eventGroupNames)).tag($0.id) }
+                HStack {
+                    Picker("Group", selection: Binding(get: { session.id }, set: { planSessionID = $0 })) {
+                        ForEach(sessions) { Text($0.title(eventGroupNames: eventGroupNames)).tag($0.id) }
+                    }
+                    .pickerStyle(.menu)
+                    Spacer()
+                    editPlanButton(for: session)
+                        .labelStyle(.titleAndIcon)
+                        .font(.subheadline.weight(.semibold))
                 }
-                .pickerStyle(.menu)
-                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal)
 
                 CoachGroupSessionView(
                     session: session,
                     restTimer: board.restBinding(for: session, label: session.label(colorIndex: session.colorIndex, eventGroupNames: eventGroupNames))
-                )
+                ) { rep in
+                    // Put the group on that rep and show the Track Board.
+                    board.choose(rep, for: session)
+                    mode = .timing
+                }
                 .id(session.id)
             }
         } else {
@@ -134,50 +180,52 @@ struct AthleteRepKey: Hashable {
 
 // MARK: - Header
 
-/// Day navigation and the session's title.
-private struct DayHeader: View {
+/// The session's title and a week of days to pick from. Shared by the Workout and Results tabs.
+struct DayHeader: View {
     @Binding var date: Date
     let workout: Workout?
+    /// Start-of-day dates that have a session, for the dots under the week.
+    let workoutDays: Set<Date>
 
     private let calendar = Calendar.current
 
     var body: some View {
-        HStack {
-            Button("Previous Day", systemImage: "chevron.left") { moveDay(by: -1) }
-            Spacer()
-            VStack(spacing: 2) {
-                Text(workout?.title ?? "No Session")
-                    .font(.headline)
-                    .lineLimit(1)
-                HStack(spacing: 6) {
-                    Text(calendar.isDateInToday(date) ? "Today" : date.formatted(.dateTime.weekday(.wide)))
-                        .foregroundStyle(.tint)
-                    Text(date, format: .dateTime.month(.abbreviated).day())
-                    if let focus = workout?.week?.focus, !focus.isEmpty {
-                        FocusBadge(text: focus)
+        VStack(spacing: 8) {
+            HStack(spacing: 10) {
+                LogoMark(size: 30)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(workout?.title ?? "No Session")
+                        .font(.headline)
+                        .lineLimit(1)
+                    HStack(spacing: 6) {
+                        Text(calendar.isDateInToday(date) ? "Today" : date.formatted(.dateTime.weekday(.wide)))
+                            .foregroundStyle(.tint)
+                        Text(date, format: .dateTime.month(.abbreviated).day())
                     }
+                    .font(.caption.weight(.semibold))
                 }
-                .font(.caption.weight(.semibold))
+                Spacer(minLength: 4)
+                if let focus = workout?.week?.focus, !focus.isEmpty {
+                    FocusBadge(text: focus)
+                }
                 if !calendar.isDateInToday(date) {
-                    Button("Back to Today") {
+                    Button("Today") {
                         date = calendar.startOfDay(for: .now)
                     }
-                    .font(.caption)
+                    .font(.subheadline.weight(.semibold))
+                    .buttonStyle(.borderless)
                 }
             }
-            Spacer()
-            Button("Next Day", systemImage: "chevron.right") { moveDay(by: 1) }
+            WeekStrip(selectedDate: $date, workoutDays: workoutDays)
         }
-        .labelStyle(.iconOnly)
-        .buttonStyle(.borderless)
         .frame(maxWidth: .infinity)
     }
+}
 
-    private func moveDay(by days: Int) {
-        if let newDate = calendar.date(byAdding: .day, value: days, to: date) {
-            date = newDate
-        }
-    }
+/// Opens the editor for one group's part of a session.
+struct EditPlanRoute: Hashable {
+    let group: EventGroup
+    let workout: Workout
 }
 
 /// A sheet for picking which groups run together this session.
@@ -236,13 +284,15 @@ private struct CombineGroupsSheet: View {
 
 // MARK: - Plan
 
-/// One group's whole plan for the day: warm-ups, drills, notes, and every set, with each rep
-/// opening the stopwatch to review, fix, or retime its times.
+/// One group's whole plan for the day: warm-ups, drills, notes, and every set. Tapping a rep
+/// shows its times, to fix one or send the rep back to the Track Board.
 struct CoachGroupSessionView: View {
     let session: GroupSession
     @Binding var restTimer: RestTimer?
+    /// Called when the coach wants to time a rep again on the Track Board.
+    let onRetime: (RepRef) -> Void
 
-    /// The rep open in the stopwatch.
+    /// The rep whose times are showing.
     @State private var timingRep: TimingRep?
 
     private var workout: Workout { session.workout }
@@ -288,18 +338,79 @@ struct CoachGroupSessionView: View {
         }
         // Unit notes and start times follow what these groups should see.
         .environment(\.athleteProfile, session.profile)
-        .fullScreenCover(item: $timingRep) { rep in
-            RepStopwatchView(
-                workoutSet: rep.workoutSet,
-                repNumber: rep.repNumber,
-                athletes: rep.athletes,
-                restTimer: $restTimer
-            )
+        .sheet(item: $timingRep) { rep in
+            RepTimesSheet(workoutSet: rep.workoutSet, repNumber: rep.repNumber, athletes: rep.athletes) {
+                onRetime(RepRef(set: rep.workoutSet, repNumber: rep.repNumber))
+            }
         }
     }
 }
 
-/// The rep open in the stopwatch, and who's running it.
+/// One rep's times for everyone who ran it. Type over a time to fix it, clear it to remove
+/// it, or send the rep back to the Track Board to time it again.
+struct RepTimesSheet: View {
+    let workoutSet: WorkoutSet
+    let repNumber: Int
+    let athletes: [Athlete]
+    /// Leave out to hide "Time This Rep Again".
+    var onRetime: (() -> Void)?
+
+    @Environment(\.dismiss) private var dismiss
+    @FocusState private var focusedField: AthleteRepKey?
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    if athletes.isEmpty {
+                        Text("Nobody in this group runs this rep.")
+                            .foregroundStyle(.secondary)
+                    }
+                    ForEach(Array(athletes.enumerated()), id: \.offset) { index, athlete in
+                        CoachTimeRow(
+                            athlete: athlete,
+                            workoutSet: workoutSet,
+                            repNumber: repNumber,
+                            focusKey: key(for: athlete),
+                            nextFocusKey: index + 1 < athletes.count ? key(for: athletes[index + 1]) : nil,
+                            focus: $focusedField
+                        )
+                    }
+                } header: {
+                    Text(workoutSet.summary)
+                } footer: {
+                    Text("Type over a time to fix it, or clear it to remove it. Changes save as you type.")
+                }
+
+                if let onRetime, !athletes.isEmpty {
+                    Section {
+                        Button("Time This Rep Again", systemImage: "stopwatch") {
+                            onRetime()
+                            dismiss()
+                        }
+                    } footer: {
+                        Text("Opens the Track Board on this rep. New times replace the ones here.")
+                    }
+                }
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .navigationTitle("Rep \(repNumber) · \(workoutSet.repName)")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
+    private func key(for athlete: Athlete) -> AthleteRepKey {
+        AthleteRepKey(rep: RepKey(setID: workoutSet.persistentModelID, repNumber: repNumber), athleteID: athlete.athleteID)
+    }
+}
+
+/// The rep whose times are showing, and who ran it.
 private struct TimingRep: Identifiable {
     let workoutSet: WorkoutSet
     let repNumber: Int
@@ -313,7 +424,7 @@ private struct TimingRep: Identifiable {
 // MARK: - Reps
 
 /// A set's reps as rows. Each shows how many athletes have been timed and the rest after it;
-/// tapping a rep opens the stopwatch.
+/// tapping a rep shows its times.
 private struct CoachSetSection: View {
     let workoutSet: WorkoutSet
     let athletes: [Athlete]
@@ -380,7 +491,7 @@ private struct CoachRepRow: View {
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
-            .accessibilityHint(timed == 0 ? "Opens the stopwatch" : "Shows times, or retime the rep")
+            .accessibilityHint("Shows this rep's times")
 
             if restSeconds > 0 {
                 RestTimerButton(
@@ -394,7 +505,7 @@ private struct CoachRepRow: View {
 
     /// e.g. "Set 2 · 3 of 5 timed"
     private func status(timed: Int) -> String {
-        let progress = athletes.isEmpty ? "No athletes" : timed == 0 ? "Tap to time" : "\(timed) of \(athletes.count) timed"
+        let progress = athletes.isEmpty ? "No athletes" : timed == 0 ? "Not timed" : "\(timed) of \(athletes.count) timed"
         return workoutSet.setCount > 1 ? "Set \(workoutSet.setNumber(forRep: repNumber)) · \(progress)" : progress
     }
 }

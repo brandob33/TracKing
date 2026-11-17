@@ -25,6 +25,10 @@ struct MonthCalendarView: View {
                 }
             }
         }
+        .onAppear {
+            // Open on the month of the day that's picked, not always this month.
+            displayedMonth = calendar.startOfMonth(for: selectedDate)
+        }
         .onChange(of: selectedDate) { _, newValue in
             // Keep the visible month in sync when the selection jumps (e.g. "Today").
             let month = calendar.startOfMonth(for: newValue)

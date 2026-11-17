@@ -1,18 +1,32 @@
 import SwiftUI
 import SwiftData
 
-/// One tab bar with everything in it. For now we assume the person using the app is the
-/// coach, so the coach's tabs come first and the athlete's screens sit alongside them.
+/// Who is using the app on this phone. It decides which tabs they get.
 ///
-/// When sign-in is added, the account type (coach or athlete) is chosen when the account is
-/// created, and decides which of these tabs someone sees: coaches get Workout and Team,
-/// athletes get My Training, History, and Profile.
+/// For now it's picked on the opening screen and can be changed from the Team tab (coach) or
+/// the Profile tab (athlete). When sign-in is added, the account type will set it instead.
+enum AppRole: String {
+    case coach
+    case athlete
+
+    /// Where the choice is saved.
+    static let storageKey = "app.role"
+}
+
+/// The app's root: the opening screen the first time, then the coach's tabs (Workout, Results,
+/// Team) or the athlete's tabs (Today, History, Profile).
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var athletes: [Athlete]
     @Query private var eventGroups: [EventGroup]
+    @AppStorage(AppRole.storageKey) private var roleName = ""
     /// Every group's clock and rest, kept here so timing carries on across tabs.
     @State private var board = TrackBoardModel()
+    @State private var isShowingSplash = true
+
+    private var role: AppRole? {
+        AppRole(rawValue: roleName)
+    }
 
     /// The athlete using this device, as opposed to teammates on the coach's roster.
     private var deviceAthlete: Athlete? {
@@ -25,29 +39,26 @@ struct ContentView: View {
     }
 
     var body: some View {
-        TabView {
-            // Coach
-            Tab("Workout", systemImage: "stopwatch.fill") {
-                CoachWorkoutView()
-            }
-            Tab("Team", systemImage: "list.clipboard") {
-                CoachView()
-            }
-
-            // Athlete
-            Tab("My Training", systemImage: "figure.run") {
-                DashboardView()
-                    .environment(\.athleteProfile, athleteProfile)
-            }
-            Tab("History", systemImage: "clock.arrow.circlepath") {
-                PastWorkoutsView()
-                    .environment(\.athleteProfile, athleteProfile)
-            }
-            Tab("Profile", systemImage: "person.crop.circle") {
+        Group {
+            switch role {
+            case .coach?:
+                coachTabs
+            case .athlete?:
+                athleteTabs
+            case nil:
                 if let deviceAthlete {
-                    ProfileView(athlete: deviceAthlete)
-                        .environment(\.athleteProfile, athleteProfile)
+                    WelcomeView(athlete: deviceAthlete) { chosen in
+                        roleName = chosen.rawValue
+                    }
+                } else {
+                    Color.screenBackground.ignoresSafeArea()
                 }
+            }
+        }
+        .overlay {
+            if isShowingSplash {
+                SplashView()
+                    .transition(.opacity)
             }
         }
         .tint(Theme.blue)
@@ -62,7 +73,59 @@ struct ContentView: View {
             let sets = (try? modelContext.fetch(FetchDescriptor<WorkoutSet>())) ?? []
             let everyone = (try? modelContext.fetch(FetchDescriptor<Athlete>())) ?? []
             board.restore(sets: sets, athletes: everyone)
+
+            try? await Task.sleep(for: .seconds(0.8))
+            withAnimation(.easeOut(duration: 0.3)) {
+                isShowingSplash = false
+            }
         }
+    }
+
+    private var coachTabs: some View {
+        TabView {
+            Tab("Workout", systemImage: "stopwatch.fill") {
+                CoachWorkoutView()
+            }
+            Tab("Results", systemImage: "tablecells") {
+                CoachResultsView()
+            }
+            Tab("Team", systemImage: "person.3.fill") {
+                CoachView()
+            }
+        }
+    }
+
+    private var athleteTabs: some View {
+        TabView {
+            Tab("Today", systemImage: "figure.run") {
+                DashboardView()
+            }
+            Tab("History", systemImage: "clock.arrow.circlepath") {
+                PastWorkoutsView()
+            }
+            Tab("Profile", systemImage: "person.crop.circle") {
+                if let deviceAthlete {
+                    ProfileView(athlete: deviceAthlete)
+                }
+            }
+        }
+        .environment(\.athleteProfile, athleteProfile)
+    }
+}
+
+/// The logo, shown for a moment while the app opens.
+private struct SplashView: View {
+    var body: some View {
+        VStack(spacing: 12) {
+            LogoMark(size: 140)
+            Text("TracKing")
+                .font(.system(size: 34, weight: .heavy, design: .rounded))
+                .foregroundStyle(Theme.blue)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemBackground))
+        .ignoresSafeArea()
+        .accessibilityHidden(true)
     }
 }
 
