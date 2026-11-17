@@ -9,6 +9,7 @@ struct TrackBoardView: View {
     let sessions: [GroupSession]
 
     @Environment(TrackBoardModel.self) private var board
+    @Environment(\.eventGroupNames) private var eventGroupNames
     @State private var focusedID: FocusTarget?
     @State private var naming: NamingTarget?
     @State private var splittingSession: GroupSession?
@@ -38,6 +39,9 @@ struct TrackBoardView: View {
         }
         .background(Color.screenBackground)
         .keepsScreenAwake()
+        .onAppear { board.timingScreenAppeared(sessions, eventGroupNames: eventGroupNames) }
+        .onChange(of: sessions.map(\.id)) { board.timingScreenAppeared(sessions, eventGroupNames: eventGroupNames) }
+        .onDisappear { board.timingScreenDisappeared() }
         .fullScreenCover(item: $focusedID) { target in
             FocusTimingView(workout: workout, initialID: target.id)
         }

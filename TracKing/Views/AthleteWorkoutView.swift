@@ -90,6 +90,12 @@ private struct SelfTimingView: View {
             .padding(.bottom, 24)
         }
         .keepsScreenAwake()
+        .onAppear {
+            // An athlete timing themselves can use the volume buttons for GO and Finish.
+            board.timingScreenAppeared([session], eventGroupNames: [:])
+            board.setFocused(session.id)
+        }
+        .onDisappear { board.timingScreenDisappeared() }
         .sensoryFeedback(.success, trigger: board.restEndedCount)
         .sensoryFeedback(.impact(weight: .heavy), trigger: board.splitCount)
     }

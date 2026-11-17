@@ -78,7 +78,14 @@ struct FocusTimingView: View {
         .sensoryFeedback(.success, trigger: board.restEndedCount)
         .sensoryFeedback(.impact(weight: .heavy), trigger: board.splitCount)
         // The Track Board underneath turns this back off when the coach leaves the Workout tab.
-        .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
+        .onAppear {
+            UIApplication.shared.isIdleTimerDisabled = true
+            board.timingScreenAppeared(sessions, eventGroupNames: eventGroupNames)
+            board.setFocused(selectedID)
+        }
+        .onChange(of: selectedID) { board.setFocused(selectedID) }
+        // Back on the board, a volume press is only a Finish when one group is running.
+        .onDisappear { board.setFocused(nil) }
     }
 }
 

@@ -104,8 +104,19 @@ final class TrackBoardModel {
     /// What each running group is running, for the lock screen.
     private var runningRepNames: [String: String] = [:]
     private var restTasks: [String: Task<Void, Never>] = [:]
+    /// The beep with 10 seconds of rest left, one per resting group.
+    private var warningTasks: [String: Task<Void, Never>] = [:]
     private let alerts = RestAlerts()
+    private let sounds = RestSounds()
+    private let volumeButtons = VolumeButtons()
     var workoutTitle = ""
+
+    /// The groups on the timing screen that's showing, so a volume-button press knows who it's for.
+    @ObservationIgnored private var visibleSessions: [GroupSession] = []
+    /// The group open in Focus, if any.
+    @ObservationIgnored private var focusedID: String?
+    /// Set once saved timing has been loaded, so an early change can't overwrite it.
+    @ObservationIgnored private var hasRestored = false
 
     func lane(_ id: String) -> LaneState {
         lanes[id] ?? LaneState()
@@ -115,6 +126,7 @@ final class TrackBoardModel {
         var lane = lanes[id] ?? LaneState()
         change(&lane)
         lanes[id] = lane
+        persist()
     }
 
     // MARK: Reps
@@ -162,9 +174,9 @@ final class TrackBoardModel {
     }
 
     /// Records one athlete crossing the line. The rep ends by itself once everyone is in.
-    func split(_ session: GroupSession) {
+    func split(_ session: GroupSession, at date: Date = .now) {
         guard let start = lane(session.id).startDate else { return }
-        update(session.id) { $0.splits.append(Date.now.timeIntervalSince(start)) }
+        update(session.id) { $0.splits.append(max(0, date.timeIntervalSince(start))) }
         splitCount += 1
         finishIfEveryoneIsIn(session)
     }
@@ -318,6 +330,14 @@ final class TrackBoardModel {
                 guard !Task.isCancelled else { return }
                 self?.restEnded(id, timer: timer)
             }
+            let untilWarning = timer.endDate.timeIntervalSinceNow - 10
+            if untilWarning > 0 {
+                warningTasks[id] = Task { [weak self] in
+                    try? await Task.sleep(for: .seconds(untilWarning))
+                    guard !Task.isCancelled, self?.lanes[id]?.rest == timer else { return }
+                    self?.sounds.playWarning()
+                }
+            }
         }
         refreshLiveActivity()
     }
@@ -330,12 +350,15 @@ final class TrackBoardModel {
         }
         restTasks[id] = nil
         restEndedCount += 1
+        sounds.playRestOver()
         refreshLiveActivity()
     }
 
     private func cancelRest(_ id: String) {
         restTasks[id]?.cancel()
         restTasks[id] = nil
+        warningTasks[id]?.cancel()
+        warningTasks[id] = nil
         alerts.cancelRestEnd(id: id)
     }
 
@@ -374,6 +397,166 @@ final class TrackBoardModel {
         update(sessionID) { $0.pending.removeAll { $0.id == captured.id } }
     }
 
+    // MARK: Volume buttons
+
+    /// Tells the board which groups are on screen and starts listening for the volume buttons.
+    /// Call it when a timing screen appears.
+    func timingScreenAppeared(_ sessions: [GroupSession], eventGroupNames: [String: String]) {
+        visibleSessions = sessions
+        for session in sessions where labels[session.id] == nil {
+            labels[session.id] = session.label(colorIndex: session.colorIndex, eventGroupNames: eventGroupNames)
+        }
+        volumeButtons.onPress = { [weak self] date in
+            self?.volumeButtonPressed(at: date)
+        }
+        volumeButtons.start()
+    }
+
+    /// Stops listening, so the volume buttons change the volume again.
+    func timingScreenDisappeared() {
+        visibleSessions = []
+        focusedID = nil
+        volumeButtons.stop()
+    }
+
+    /// The group open in Focus, or `nil` back on the board.
+    func setFocused(_ id: String?) {
+        focusedID = id
+    }
+
+    /// Starts or stops listening after the setting is changed.
+    func volumeButtonSettingChanged() {
+        if TimingSettings.volumeButtons {
+            if !visibleSessions.isEmpty { volumeButtons.start() }
+        } else {
+            volumeButtons.stop()
+        }
+    }
+
+    /// A press of either volume button.
+    ///
+    /// In Focus it works the big button for that group: Finish while they're running, GO
+    /// when they're ready. On the board it's Finish when exactly one group is running, since
+    /// with two running there's no telling which one the press is for.
+    private func volumeButtonPressed(at date: Date) {
+        if let focusedID, let session = visibleSessions.first(where: { $0.id == focusedID }) {
+            let lane = self.lane(focusedID)
+            if lane.isRunning {
+                split(session, at: date)
+            } else if lane.rest == nil, let label = labels[focusedID] {
+                go(session, label: label)
+            }
+            return
+        }
+        let running = visibleSessions.filter { lane($0.id).isRunning }
+        if running.count == 1 {
+            split(running[0], at: date)
+        }
+    }
+
+    // MARK: Saved state
+
+    private static let snapshotKey = "trackBoard.snapshot"
+
+    /// Saves every clock, rest, and time waiting for a name, so nothing is lost if the app
+    /// is closed in the middle of practice.
+    private func persist() {
+        guard hasRestored else { return }
+        let worthKeeping = lanes.values.contains { $0.isRunning || $0.rest != nil || !$0.pending.isEmpty }
+        guard worthKeeping else {
+            UserDefaults.standard.removeObject(forKey: Self.snapshotKey)
+            return
+        }
+        var saved: [String: BoardSnapshot.Lane] = [:]
+        for (id, lane) in lanes {
+            var position: BoardSnapshot.Rep?
+            if case .rep(let rep) = lane.position {
+                position = BoardSnapshot.Rep(setID: rep.set.persistentModelID, repNumber: rep.repNumber)
+            }
+            saved[id] = BoardSnapshot.Lane(
+                position: position,
+                startDate: lane.startDate,
+                splits: lane.splits,
+                restRep: lane.rest.map { BoardSnapshot.Rep(setID: $0.rep.setID, repNumber: $0.rep.repNumber) },
+                restStart: lane.rest?.startDate,
+                restEnd: lane.rest?.endDate,
+                pausedRestRemaining: lane.pausedRestRemaining,
+                isCalled: lane.isCalled,
+                pending: lane.pending.map { captured in
+                    BoardSnapshot.Captured(
+                        rep: BoardSnapshot.Rep(setID: captured.rep.set.persistentModelID, repNumber: captured.rep.repNumber),
+                        splits: captured.splits,
+                        athleteIDs: captured.athletes.map(\.athleteID)
+                    )
+                },
+                lastOrder: lane.lastOrder,
+                title: labels[id]?.title ?? "Group",
+                colorIndex: labels[id]?.colorIndex ?? 0,
+                nextRepName: nextRepNames[id],
+                runningRepName: runningRepNames[id]
+            )
+        }
+        let snapshot = BoardSnapshot(savedAt: .now, workoutTitle: workoutTitle, lanes: saved)
+        if let data = try? JSONEncoder().encode(snapshot) {
+            UserDefaults.standard.set(data, forKey: Self.snapshotKey)
+        }
+    }
+
+    /// Loads timing saved before the app was closed: running clocks keep counting from when
+    /// they started, rests pick up where they'd be now, and un-named times come back.
+    /// Call it once at launch. Anything older than a day is dropped.
+    func restore(sets: [WorkoutSet], athletes: [Athlete]) {
+        guard !hasRestored else { return }
+        hasRestored = true
+        guard
+            let data = UserDefaults.standard.data(forKey: Self.snapshotKey),
+            let snapshot = try? JSONDecoder().decode(BoardSnapshot.self, from: data),
+            Date.now.timeIntervalSince(snapshot.savedAt) < 24 * 60 * 60
+        else { return }
+
+        let setsByID = Dictionary(sets.map { ($0.persistentModelID, $0) }, uniquingKeysWith: { first, _ in first })
+        func repRef(_ saved: BoardSnapshot.Rep?) -> RepRef? {
+            guard let saved, let workoutSet = setsByID[saved.setID] else { return nil }
+            return RepRef(set: workoutSet, repNumber: saved.repNumber)
+        }
+
+        if workoutTitle.isEmpty {
+            workoutTitle = snapshot.workoutTitle
+        }
+        for (id, saved) in snapshot.lanes {
+            var lane = LaneState()
+            if let position = repRef(saved.position) {
+                lane.position = .rep(position)
+            }
+            lane.startDate = saved.startDate
+            lane.splits = saved.splits
+            lane.isCalled = saved.isCalled
+            lane.lastOrder = saved.lastOrder
+            lane.pending = saved.pending.compactMap { captured in
+                guard let rep = repRef(captured.rep) else { return nil }
+                let runners = captured.athleteIDs.compactMap { athleteID in athletes.first { $0.athleteID == athleteID } }
+                return CapturedRep(rep: rep, splits: captured.splits, athletes: runners)
+            }
+            labels[id] = LaneLabel(title: saved.title, colorIndex: saved.colorIndex)
+            nextRepNames[id] = saved.nextRepName
+            runningRepNames[id] = saved.runningRepName
+            lanes[id] = lane
+
+            guard let restRep = saved.restRep, let restStart = saved.restStart, let restEnd = saved.restEnd else { continue }
+            let timer = RestTimer(rep: RepKey(setID: restRep.setID, repNumber: restRep.repNumber), startDate: restStart, endDate: restEnd)
+            if let paused = saved.pausedRestRemaining {
+                lanes[id]?.rest = timer
+                lanes[id]?.pausedRestRemaining = paused
+            } else if restEnd > .now {
+                setRest(timer, for: id)
+            } else {
+                // The rest ran out while the app was closed.
+                lanes[id]?.isCalled = true
+            }
+        }
+        refreshLiveActivity()
+    }
+
     // MARK: Lock screen
 
     private func refreshLiveActivity() {
@@ -392,4 +575,40 @@ final class TrackBoardModel {
         }
         alerts.updateLiveActivity(statuses, workoutTitle: workoutTitle)
     }
+}
+
+/// What's written to disk so timing survives the app being closed. Reps are saved by their
+/// set's ID and rep number, and athletes by ID, then matched back up at launch.
+nonisolated private struct BoardSnapshot: Codable {
+    nonisolated struct Rep: Codable {
+        var setID: PersistentIdentifier
+        var repNumber: Int
+    }
+
+    nonisolated struct Captured: Codable {
+        var rep: Rep
+        var splits: [TimeInterval]
+        var athleteIDs: [String]
+    }
+
+    nonisolated struct Lane: Codable {
+        var position: Rep?
+        var startDate: Date?
+        var splits: [TimeInterval]
+        var restRep: Rep?
+        var restStart: Date?
+        var restEnd: Date?
+        var pausedRestRemaining: TimeInterval?
+        var isCalled: Bool
+        var pending: [Captured]
+        var lastOrder: [String]
+        var title: String
+        var colorIndex: Int
+        var nextRepName: String?
+        var runningRepName: String?
+    }
+
+    var savedAt: Date
+    var workoutTitle: String
+    var lanes: [String: Lane]
 }

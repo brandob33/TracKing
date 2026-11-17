@@ -58,6 +58,10 @@ struct ContentView: View {
             if deviceAthlete == nil {
                 modelContext.insert(Athlete(isDeviceUser: true))
             }
+            // Bring back any clocks, rests, and un-named times from before the app was closed.
+            let sets = (try? modelContext.fetch(FetchDescriptor<WorkoutSet>())) ?? []
+            let everyone = (try? modelContext.fetch(FetchDescriptor<Athlete>())) ?? []
+            board.restore(sets: sets, athletes: everyone)
         }
     }
 }
