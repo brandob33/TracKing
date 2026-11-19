@@ -2,7 +2,10 @@ import AVFoundation
 import MediaPlayer
 import UIKit
 
-/// The coach's timing options, kept between launches. Both are on until turned off.
+/// The coach's timing options, kept between launches. Rest sounds are on until turned off.
+/// Volume buttons are off until the coach turns them on: they rely on a workaround that
+/// needs testing on a real phone, and App Review can reject apps that change what the
+/// volume buttons do (guideline 2.5.9).
 enum TimingSettings {
     static let restSoundsKey = "timing.restSounds"
     static let volumeButtonsKey = "timing.volumeButtons"
@@ -12,7 +15,7 @@ enum TimingSettings {
     }
 
     static var volumeButtons: Bool {
-        UserDefaults.standard.object(forKey: volumeButtonsKey) as? Bool ?? true
+        UserDefaults.standard.object(forKey: volumeButtonsKey) as? Bool ?? false
     }
 }
 

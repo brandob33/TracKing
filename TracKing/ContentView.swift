@@ -74,8 +74,10 @@ struct ContentView: View {
             let everyone = (try? modelContext.fetch(FetchDescriptor<Athlete>())) ?? []
             board.restore(sets: sets, athletes: everyone)
 
-            try? await Task.sleep(for: .seconds(0.8))
-            withAnimation(.easeOut(duration: 0.3)) {
+            // The launch screen already showed the logo, so only hold it long enough for the
+            // name to fade in, then reveal the app.
+            try? await Task.sleep(for: .seconds(0.35))
+            withAnimation(.easeOut(duration: 0.25)) {
                 isShowingSplash = false
             }
         }
@@ -114,18 +116,28 @@ struct ContentView: View {
 }
 
 /// The logo, shown for a moment while the app opens.
+/// Picks up where the system launch screen (`UILaunchScreen` in Info.plist) leaves off: the
+/// logo in the same spot and size, so there's no jump, with the app's name fading in below.
 private struct SplashView: View {
+    @State private var isShowingName = false
+
     var body: some View {
-        VStack(spacing: 12) {
-            LogoMark(size: 140)
-            Text("TracKing")
-                .font(.system(size: 34, weight: .heavy, design: .rounded))
-                .foregroundStyle(Theme.blue)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground))
-        .ignoresSafeArea()
-        .accessibilityHidden(true)
+        // Matches LaunchLogo: a 384px image at 3x, centered in the safe area.
+        LogoMark(size: 128)
+            .overlay(alignment: .bottom) {
+                Text("TracKing")
+                    .font(.system(size: 34, weight: .heavy, design: .rounded))
+                    .foregroundStyle(Theme.blue)
+                    .fixedSize()
+                    .offset(y: 56)
+                    .opacity(isShowingName ? 1 : 0)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(.systemBackground))
+            .accessibilityHidden(true)
+            .onAppear {
+                withAnimation(.easeOut(duration: 0.25)) { isShowingName = true }
+            }
     }
 }
 

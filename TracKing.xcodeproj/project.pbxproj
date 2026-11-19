@@ -45,11 +45,21 @@
 			);
 			target = 000000000000000200000000 /* TracKingWidgetsExtension */;
 		};
+		891C4B1730AC2DD5004633B0 /* Exceptions for "TracKing" folder in "TracKing" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 000000000000000100000000 /* TracKing */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		000000000000000000000010 /* TracKing */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				891C4B1730AC2DD5004633B0 /* Exceptions for "TracKing" folder in "TracKing" target */,
+			);
 			path = TracKing;
 			sourceTree = "<group>";
 		};
@@ -362,6 +372,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TracKing/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TracKing;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -405,6 +416,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TracKing/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TracKing;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;

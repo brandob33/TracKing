@@ -16,7 +16,7 @@ struct CoachWorkoutView: View {
     @State private var isCombining = false
     @State private var editing: EditPlanRoute?
     @AppStorage(TimingSettings.restSoundsKey) private var restSounds = true
-    @AppStorage(TimingSettings.volumeButtonsKey) private var volumeButtons = true
+    @AppStorage(TimingSettings.volumeButtonsKey) private var volumeButtons = false
 
     enum Mode: String, CaseIterable {
         case timing = "Timing"
