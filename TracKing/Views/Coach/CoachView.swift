@@ -10,7 +10,8 @@ struct CoachView: View {
     @State private var isAddingGroup = false
     @State private var newGroupName = ""
     @State private var groupToDelete: EventGroup?
-    @AppStorage(AppRole.storageKey) private var roleName = ""
+    @Environment(AuthModel.self) private var auth
+    @State private var isCreatingTeam = false
 
     var body: some View {
         NavigationStack {
@@ -50,14 +51,37 @@ struct CoachView: View {
                 }
 
                 Section {
-                    Button("Switch to Athlete View", systemImage: "figure.run") {
-                        roleName = AppRole.athlete.rawValue
+                    if let team = auth.team {
+                        LabeledContent("Team", value: team.name)
+                        LabeledContent("Join Code") {
+                            Text(team.joinCode)
+                                .font(.system(.body, design: .monospaced).weight(.semibold))
+                                .textSelection(.enabled)
+                        }
+                        ShareLink(
+                            "Share Join Code",
+                            item: "Join \(team.name) on TracKing with code \(team.joinCode)"
+                        )
+                    } else {
+                        Button("Create a Team", systemImage: "person.3.fill") {
+                            isCreatingTeam = true
+                        }
                     }
+                    Button("Sign Out", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
+                        auth.signOut()
+                    }
+                } header: {
+                    Text("Account")
                 } footer: {
-                    Text("Shows an athlete's tabs: Today, History, and Profile.")
+                    if auth.team != nil {
+                        Text("Athletes enter this code when they set up their account.")
+                    }
                 }
             }
             .navigationTitle("Team")
+            .sheet(isPresented: $isCreatingTeam) {
+                TeamSetupView { isCreatingTeam = false }
+            }
             .navigationDestination(for: EventGroup.self) { group in
                 EventGroupDetailView(group: group)
             }
@@ -164,5 +188,6 @@ struct AthleteAssignmentView: View {
 
 #Preview {
     CoachView()
+        .environment(AuthModel())
         .modelContainer(SampleData.previewContainer)
 }

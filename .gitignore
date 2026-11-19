@@ -11,5 +11,8 @@ build/
 .build/
 .swiftpm/
 
-# Firebase config (contains project keys; add locally, don't commit)
-GoogleService-Info.plist
+
+# Firebase CLI
+.firebase/
+firebase-debug.log
+firestore-debug.log

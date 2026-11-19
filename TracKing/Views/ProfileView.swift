@@ -7,7 +7,8 @@ struct ProfileView: View {
 
     @Query private var results: [RepResult]
     @Environment(\.eventGroupNames) private var eventGroupNames
-    @AppStorage(AppRole.storageKey) private var roleName = ""
+    @Environment(AuthModel.self) private var auth
+    @State private var isJoiningTeam = false
     @State private var isAddingRecord = false
 
     /// Records in event order, so the list reads 60m, 100m, 200m, and so on.
@@ -105,15 +106,26 @@ struct ProfileView: View {
                     LabeledContent("Reps Logged", value: myResults.count, format: .number)
                 }
 
-                Section {
-                    Button("Switch to Coach View", systemImage: "stopwatch") {
-                        roleName = AppRole.coach.rawValue
+                Section("Account") {
+                    if let team = auth.team {
+                        LabeledContent("Team", value: team.name)
+                    } else {
+                        Button("Join a Team", systemImage: "person.badge.plus") {
+                            isJoiningTeam = true
+                        }
                     }
-                } footer: {
-                    Text("Shows the coach's tabs: Workout, Results, and Team.")
+                    if let email = auth.email {
+                        LabeledContent("Email", value: email)
+                    }
+                    Button("Sign Out", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
+                        auth.signOut()
+                    }
                 }
             }
             .navigationTitle("Profile")
+            .sheet(isPresented: $isJoiningTeam) {
+                TeamSetupView { isJoiningTeam = false }
+            }
             .sheet(isPresented: $isAddingRecord) {
                 AddRecordView { record in
                     // Replace any existing record for the same event.
@@ -216,5 +228,6 @@ private struct AddRecordView: View {
     ]
     container.mainContext.insert(athlete)
     return ProfileView(athlete: athlete)
+        .environment(AuthModel())
         .modelContainer(container)
 }

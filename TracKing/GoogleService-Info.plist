@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>775488431646-vea8btbmtv970n22676r9d8qou2lo4r2.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.775488431646-vea8btbmtv970n22676r9d8qou2lo4r2</string>
+	<key>API_KEY</key>
+	<string>AIzaSyDpN8bKvuXAagK1qdhNYL9iLjNlnj8BiEE</string>
+	<key>GCM_SENDER_ID</key>
+	<string>775488431646</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>BurnsDev.TracKing</string>
+	<key>PROJECT_ID</key>
+	<string>tracking-1c17a</string>
+	<key>STORAGE_BUCKET</key>
+	<string>tracking-1c17a.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:775488431646:ios:c51ac01f93180326c5b00f</string>
+</dict>
+</plist>

@@ -1,32 +1,23 @@
 import SwiftUI
 import SwiftData
 
-/// Who is using the app on this phone. It decides which tabs they get.
-///
-/// For now it's picked on the opening screen and can be changed from the Team tab (coach) or
-/// the Profile tab (athlete). When sign-in is added, the account type will set it instead.
-enum AppRole: String {
+/// What kind of account someone has. It's picked when the account is created and decides
+/// which tabs they get: the coach's (Workout, Results, Team) or the athlete's (Today, History, Profile).
+enum AppRole: String, Codable {
     case coach
     case athlete
-
-    /// Where the choice is saved.
-    static let storageKey = "app.role"
 }
 
-/// The app's root: the opening screen the first time, then the coach's tabs (Workout, Results,
-/// Team) or the athlete's tabs (Today, History, Profile).
+/// The app's root: sign in, set up the account the first time, then the tabs for that
+/// account type.
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var athletes: [Athlete]
     @Query private var eventGroups: [EventGroup]
-    @AppStorage(AppRole.storageKey) private var roleName = ""
+    @State private var auth = AuthModel()
     /// Every group's clock and rest, kept here so timing carries on across tabs.
     @State private var board = TrackBoardModel()
     @State private var isShowingSplash = true
-
-    private var role: AppRole? {
-        AppRole(rawValue: roleName)
-    }
 
     /// The athlete using this device, as opposed to teammates on the coach's roster.
     private var deviceAthlete: Athlete? {
@@ -40,31 +31,47 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            switch role {
-            case .coach?:
-                coachTabs
-            case .athlete?:
-                athleteTabs
-            case nil:
-                if let deviceAthlete {
-                    WelcomeView(athlete: deviceAthlete) { chosen in
-                        roleName = chosen.rawValue
-                    }
-                } else {
-                    Color.screenBackground.ignoresSafeArea()
+            switch auth.state {
+            case .loading:
+                Color.screenBackground.ignoresSafeArea()
+            case .signedOut:
+                SignInView()
+            case .needsAccount:
+                AccountSetupView()
+            case .failed(let message):
+                ContentUnavailableView {
+                    Label("Couldn't Load Your Account", systemImage: "wifi.exclamationmark")
+                } description: {
+                    Text(message)
+                } actions: {
+                    Button("Try Again") { Task { await auth.loadAccount() } }
+                        .buttonStyle(.borderedProminent)
+                    Button("Sign Out", role: .destructive) { auth.signOut() }
+                }
+            case .ready:
+                switch auth.account?.role {
+                case .coach?: coachTabs
+                case .athlete?: athleteTabs
+                case nil: AccountSetupView()
                 }
             }
         }
         .overlay {
-            if isShowingSplash {
+            // Hold the logo until we know whether someone is signed in, so the sign-in
+            // screen doesn't flash up first.
+            if isShowingSplash || auth.state == .loading {
                 SplashView()
                     .transition(.opacity)
             }
         }
+        .animation(.easeOut(duration: 0.25), value: auth.state)
         .tint(Theme.blue)
+        .environment(auth)
         .environment(board)
         .environment(\.eventGroupNames, Dictionary(eventGroups.map { ($0.groupID, $0.name) }, uniquingKeysWith: { first, _ in first }))
+        .onChange(of: auth.account) { linkDeviceAthlete() }
         .task {
+            auth.start()
             SampleData.seedIfNeeded(modelContext)
             if deviceAthlete == nil {
                 modelContext.insert(Athlete(isDeviceUser: true))
@@ -80,6 +87,18 @@ struct ContentView: View {
             withAnimation(.easeOut(duration: 0.25)) {
                 isShowingSplash = false
             }
+        }
+    }
+
+    /// Ties this phone's athlete to the signed-in account, so times they log are saved under
+    /// their account ID, ready to sync to Firestore.
+    private func linkDeviceAthlete() {
+        guard let uid = auth.uid, let account = auth.account, let deviceAthlete else { return }
+        if deviceAthlete.athleteID != uid {
+            deviceAthlete.athleteID = uid
+        }
+        if deviceAthlete.name != account.name {
+            deviceAthlete.name = account.name
         }
     }
 

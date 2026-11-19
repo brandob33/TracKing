@@ -1,0 +1,107 @@
+rules_version = '2';
+
+// Security rules for TracKing. Paste into Firebase console > Firestore Database > Rules
+// and Publish, or deploy with `firebase deploy --only firestore:rules`.
+//
+// Who can do what:
+// - Everyone signed in manages only their own users/{uid} document.
+// - A coach creates a team, and is its first member with role "coach".
+// - An athlete joins by writing their own member document with the team's join code.
+// - Members can read their team. Only coaches change the team, its members' groups, and the plan.
+// - Logged times (results): coaches write anyone's; athletes write only their own.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function teamPath(team) {
+      return /databases/$(database)/documents/teams/$(team);
+    }
+
+    function memberPath(team, uid) {
+      return /databases/$(database)/documents/teams/$(team)/members/$(uid);
+    }
+
+    function isMember(team) {
+      return signedIn() && exists(memberPath(team, request.auth.uid));
+    }
+
+    function isCoach(team) {
+      return isMember(team) && get(memberPath(team, request.auth.uid)).data.role == 'coach';
+    }
+
+    // users/{uid}: name, account type, team.
+    match /users/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.role in ['coach', 'athlete'];
+      // The account type is picked once and can't be changed afterward.
+      allow update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.role == resource.data.role;
+      allow delete: if false;
+    }
+
+    // joinCodes/{code}: points a team code at its team. Anyone signed in can look up one
+    // code they already know, but can't list them.
+    match /joinCodes/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+      // Made in the same batch as the team, so check the team as it will be after the write.
+      allow create: if signedIn()
+        && getAfter(teamPath(request.resource.data.teamID)).data.createdBy == request.auth.uid
+        && getAfter(teamPath(request.resource.data.teamID)).data.joinCode == code;
+      allow update, delete: if isCoach(resource.data.teamID);
+    }
+
+    match /teams/{team} {
+      allow read: if isMember(team);
+      allow create: if signedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow update: if isCoach(team);
+      allow delete: if false;
+
+      match /members/{uid} {
+        allow read: if isMember(team);
+
+        allow create: if signedIn() && request.auth.uid == uid && (
+          // The coach who made the team, in the same batch.
+          (request.resource.data.role == 'coach'
+            && getAfter(teamPath(team)).data.createdBy == uid)
+          // An athlete with the team's current join code.
+          || (request.resource.data.role == 'athlete'
+            && request.resource.data.joinCode == get(teamPath(team)).data.joinCode)
+        );
+
+        // Coaches assign groups. Athletes can update their own name, but not their role or groups.
+        allow update: if isCoach(team) || (
+          request.auth.uid == uid
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.eventGroupID == resource.data.eventGroupID
+          && request.resource.data.genderGroupID == resource.data.genderGroupID
+        );
+
+        // Coaches can remove athletes; anyone can leave.
+        allow delete: if isCoach(team) || request.auth.uid == uid;
+      }
+
+      // Logged times. Each result names the athlete who ran the rep.
+      match /results/{result} {
+        allow read: if isCoach(team)
+          || (isMember(team) && resource.data.athleteID == request.auth.uid);
+        allow create, update: if isCoach(team)
+          || (isMember(team) && request.resource.data.athleteID == request.auth.uid
+              && request.resource.data.loggedByCoach == false);
+        allow delete: if isCoach(team)
+          || (isMember(team) && resource.data.athleteID == request.auth.uid
+              && resource.data.loggedByCoach == false);
+      }
+
+      // The plan: weeks, workouts, event groups, and the series library.
+      match /{collection}/{doc} {
+        allow read: if isMember(team) && collection in ['weeks', 'workouts', 'eventGroups', 'series'];
+        allow write: if isCoach(team) && collection in ['weeks', 'workouts', 'eventGroups', 'series'];
+      }
+    }
+  }
+}
